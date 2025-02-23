@@ -1,0 +1,104 @@
+flowchart TB
+    %% Client Layer
+    Client[React Native Mobile App]
+    
+    %% API Gateway & Authentication Layer
+    subgraph Gateway[API Gateway & Auth Layer]
+        direction TB
+        REST[REST API Endpoints]
+        Auth[JWT Authentication]
+        Middleware[Request Middleware]
+        style Gateway fill:#000080,color:white
+    end
+
+    %% Core Services Layer
+    subgraph CoreServices[Core Business Services]
+        direction TB
+        subgraph UserManagement[User Management]
+            UserService[User Service]
+            ProfileService[Profile Service]
+            AuthService[Auth Service]
+        end
+
+        subgraph LocationServices[Location & Places]
+            LocationService[Location Service]
+            PlaceService[Place Service]
+            SearchService[Search Service]
+        end
+
+        subgraph SocialServices[Social Features]
+            ChatService[Chat Service]
+            ConnectionService[Connection Service]
+            NotificationService[Notification Service]
+        end
+
+        subgraph StorageServices[Local Storage]
+            FileService[File Service]
+            MediaService[Media Service]
+        end
+        style CoreServices fill:#4B0082,color:white
+    end
+
+    %% External Services Integration
+    subgraph ExternalServices[External Services]
+        direction LR
+        MapBox[MapBox API]
+        Firebase[Firebase]
+        Twilio[Twilio SMS]
+        style ExternalServices fill:#483D8B,color:white
+    end
+
+    %% Database Layer
+    subgraph DataLayer[Data Persistence Layer]
+        direction TB
+        PostgreSQL[(PostgreSQL)]
+        FirebaseRTDB[(Firebase Realtime DB)]
+        LocalFiles[(Local File System)]
+        style DataLayer fill:#1E90FF,color:white
+    end
+
+    %% Background Processing
+    subgraph BackgroundTasks[Background Processing]
+        direction TB
+        Celery[Celery Workers]
+        TaskQueue[Task Queue]
+        Scheduler[Task Scheduler]
+        style BackgroundTasks fill:#4B0082,color:white
+    end
+
+    %% Main Flow Connections
+    Client --> Gateway
+    Gateway --> CoreServices
+    CoreServices --> DataLayer
+    CoreServices --> ExternalServices
+    BackgroundTasks --> CoreServices
+
+    %% Service-Specific Connections
+    LocationServices --> MapBox
+    ChatService --> Firebase
+    StorageServices --> LocalFiles
+    AuthService --> Twilio
+    
+    %% Database Connections
+    UserManagement --> PostgreSQL
+    LocationServices --> PostgreSQL
+    SocialServices --> FirebaseRTDB
+    FileService --> LocalFiles
+    MediaService --> LocalFiles
+    
+    %% Background Task Connections
+    Celery --> NotificationService
+    TaskQueue --> LocationService
+    Scheduler --> SearchService
+
+    %% Styling
+    classDef primary fill:#000080,stroke:#333,stroke-width:2px,color:white
+    classDef secondary fill:#4B0082,stroke:#333,stroke-width:2px,color:white
+    classDef database fill:#1E90FF,stroke:#333,stroke-width:2px,color:white
+    classDef external fill:#483D8B,stroke:#333,stroke-width:2px,color:white
+
+    %% Apply Styles
+    class Client primary
+    class Gateway,CoreServices secondary
+    class DataLayer database
+    class ExternalServices external

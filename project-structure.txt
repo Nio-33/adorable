@@ -1,0 +1,123 @@
+adorable/
+├── src/
+│   ├── components/
+│   │   ├── common/
+│   │   │   ├── Button/
+│   │   │   ├── Input/
+│   │   │   ├── Card/
+│   │   │   ├── Modal/
+│   │   │   └── Loading/
+│   │   ├── map/
+│   │   │   ├── MapView/
+│   │   │   ├── Markers/
+│   │   │   ├── SearchBar/
+│   │   │   └── LocationCard/
+│   │   ├── chat/
+│   │   │   ├── ChatBubble/
+│   │   │   ├── ChatInput/
+│   │   │   ├── ChatList/
+│   │   │   └── UserStatus/
+│   │   └── places/
+│   │       ├── PlaceCard/
+│   │       ├── PlaceList/
+│   │       ├── CategoryList/
+│   │       └── ReviewCard/
+│   │
+│   ├── screens/
+│   │   ├── auth/
+│   │   │   ├── Login.tsx
+│   │   │   ├── SignUp.tsx
+│   │   │   ├── ForgotPassword.tsx
+│   │   │   └── ProfileSetup.tsx
+│   │   ├── main/
+│   │   │   ├── Home.tsx
+│   │   │   ├── Discover.tsx
+│   │   │   ├── Chat.tsx
+│   │   │   └── Profile.tsx
+│   │   └── places/
+│   │       ├── PlaceDetails.tsx
+│   │       ├── AddPlace.tsx
+│   │       └── Reviews.tsx
+│   │
+│   ├── navigation/
+│   │   ├── AppNavigator.tsx
+│   │   ├── AuthNavigator.tsx
+│   │   ├── MainNavigator.tsx
+│   │   └── NavigationService.ts
+│   │
+│   ├── services/
+│   │   ├── api/
+│   │   │   ├── auth.ts
+│   │   │   ├── places.ts
+│   │   │   ├── users.ts
+│   │   │   └── chat.ts
+│   │   ├── firebase/
+│   │   │   ├── config.ts
+│   │   │   ├── auth.ts
+│   │   │   └── firestore.ts
+│   │   ├── mapbox/
+│   │   │   ├── config.ts
+│   │   │   └── geocoding.ts
+│   │   └── socket/
+│   │       ├── config.ts
+│   │       └── events.ts
+│   │
+│   ├── hooks/
+│   │   ├── useAuth.ts
+│   │   ├── useLocation.ts
+│   │   ├── useChat.ts
+│   │   └── usePlaces.ts
+│   │
+│   ├── context/
+│   │   ├── AuthContext.tsx
+│   │   ├── LocationContext.tsx
+│   │   └── ThemeContext.tsx
+│   │
+│   ├── utils/
+│   │   ├── permissions.ts
+│   │   ├── validation.ts
+│   │   ├── formatting.ts
+│   │   └── storage.ts
+│   │
+│   ├── constants/
+│   │   ├── colors.ts
+│   │   ├── typography.ts
+│   │   ├── layout.ts
+│   │   └── config.ts
+│   │
+│   ├── assets/
+│   │   ├── images/
+│   │   ├── icons/
+│   │   └── fonts/
+│   │
+│   ├── types/
+│   │   ├── navigation.ts
+│   │   ├── api.ts
+│   │   ├── models.ts
+│   │   └── components.ts
+│   │
+│   └── styles/
+│       ├── global.ts
+│       ├── theme.ts
+│       └── mixins.ts
+│
+├── android/
+│   └── ...
+│
+├── ios/
+│   └── ...
+│
+├── __tests__/
+│   ├── components/
+│   ├── screens/
+│   └── services/
+│
+├── .env
+├── .env.development
+├── .env.production
+├── .gitignore
+├── package.json
+├── tsconfig.json
+├── babel.config.js
+├── metro.config.js
+└── README.md
