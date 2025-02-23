@@ -1,75 +1,75 @@
 import React from 'react';
-import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { MainTabParamList } from '../types/navigation';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../config/theme';
-import { MapScreen } from '../screens/map';
-import { DiscoverNavigator } from '../screens/discover/navigation/DiscoverNavigator';
-import { MessagesNavigator } from '../screens/messages/navigation/MessagesNavigator';
-import { PeopleScreen } from '../screens/people';
+import { MapScreen } from '../screens/map/MapScreen';
+import { MessagesScreen } from '../screens/messages/MessagesScreen';
+import { PeopleScreen } from '../screens/people/PeopleScreen';
 
-export type TabParamList = {
-  Map: undefined;
-  Discover: undefined;
-  Messages: undefined;
-  People: undefined;
-};
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const Tab = createBottomTabNavigator<TabParamList>();
+const HomeTabIcon = ({ focused }: { focused: boolean }) => (
+  <Ionicons 
+    name="home" 
+    size={24} 
+    color={focused ? COLORS.primary.main : COLORS.secondary.main} 
+  />
+);
+
+const ChatTabIcon = ({ focused }: { focused: boolean }) => (
+  <Ionicons 
+    name="chatbubbles" 
+    size={24} 
+    color={focused ? COLORS.primary.main : COLORS.secondary.main} 
+  />
+);
+
+const MapTabIcon = ({ focused }: { focused: boolean }) => (
+  <Ionicons 
+    name="map" 
+    size={24} 
+    color={focused ? COLORS.primary.main : COLORS.secondary.main} 
+  />
+);
+
+const ProfileTabIcon = ({ focused }: { focused: boolean }) => (
+  <Ionicons 
+    name="person" 
+    size={24} 
+    color={focused ? COLORS.primary.main : COLORS.secondary.main} 
+  />
+);
 
 export const TabNavigator: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={{
+        tabBarShowLabel: false,
         headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.text.tertiary,
-        tabBarStyle: {
-          backgroundColor: COLORS.background.primary,
-          borderTopColor: COLORS.border.light,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-        },
       }}
     >
       <Tab.Screen
         name="Map"
         component={MapScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            // We'll replace these with proper icons later
-            <View style={{ width: size, height: size, backgroundColor: color, borderRadius: size / 2 }} />
-          ),
+          tabBarIcon: MapTabIcon,
         }}
       />
       <Tab.Screen
-        name="Discover"
-        component={DiscoverNavigator}
+        name="Chat"
+        component={MessagesScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <View style={{ width: size, height: size, backgroundColor: color, borderRadius: size / 2 }} />
-          ),
+          tabBarIcon: ChatTabIcon,
         }}
       />
       <Tab.Screen
-        name="Messages"
-        component={MessagesNavigator}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <View style={{ width: size, height: size, backgroundColor: color, borderRadius: size / 2 }} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="People"
+        name="Profile"
         component={PeopleScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <View style={{ width: size, height: size, backgroundColor: color, borderRadius: size / 2 }} />
-          ),
+          tabBarIcon: ProfileTabIcon,
         }}
       />
     </Tab.Navigator>
   );
-}; 
+};

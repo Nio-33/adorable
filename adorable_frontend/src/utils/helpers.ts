@@ -98,14 +98,14 @@ export const validatePassword = (password: string): boolean => {
 
 // Image helpers
 export const getImageUrl = (path: string): string => {
-  if (path.startsWith('http')) return path;
+  if (path.startsWith('http')) {return path;}
   return `${process.env.EXPO_PUBLIC_API_URL}/images/${path}`;
 };
 
 // Error handling
 export const handleError = (error: any): string => {
-  if (typeof error === 'string') return error;
-  if (error.message) return error.message;
+  if (typeof error === 'string') {return error;}
+  if (error.message) {return error.message;}
   return 'An unexpected error occurred';
 };
 
@@ -130,4 +130,4 @@ export type RecursiveNullToUndefined<T> = {
     : T[P] extends object
     ? RecursiveNullToUndefined<T[P]>
     : NullToUndefined<T[P]>;
-}; 
+};

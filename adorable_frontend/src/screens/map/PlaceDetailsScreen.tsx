@@ -158,4 +158,4 @@ const styles = StyleSheet.create({
   writeReviewButton: {
     marginTop: SPACING.md,
   },
-}); 
+});

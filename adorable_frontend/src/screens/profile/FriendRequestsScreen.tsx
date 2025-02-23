@@ -82,7 +82,7 @@ export const FriendRequestsScreen: React.FC = () => {
   const [responding, setResponding] = useState<string | null>(null);
 
   const loadRequests = async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       setError(null);
       const loadedRequests = await peopleService.getFriendRequests(user.uid);
@@ -96,7 +96,7 @@ export const FriendRequestsScreen: React.FC = () => {
   };
 
   const handleAccept = async (request: FriendRequest) => {
-    if (!user || responding) return;
+    if (!user || responding) {return;}
     try {
       setResponding(request.id);
       await peopleService.respondToFriendRequest(request.id, user.uid, true);
@@ -111,7 +111,7 @@ export const FriendRequestsScreen: React.FC = () => {
   };
 
   const handleDecline = async (request: FriendRequest) => {
-    if (!user || responding) return;
+    if (!user || responding) {return;}
     try {
       setResponding(request.id);
       await peopleService.respondToFriendRequest(request.id, user.uid, false);
@@ -250,4 +250,4 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
   },
-}); 
+});

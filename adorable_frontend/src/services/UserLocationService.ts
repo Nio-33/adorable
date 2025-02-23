@@ -28,7 +28,7 @@ class UserLocationService {
       const userRef = doc(this.usersCollection, currentUser.uid);
       await updateDoc(userRef, {
         location: new GeoPoint(location.latitude, location.longitude),
-        lastLocationUpdate: serverTimestamp()
+        lastLocationUpdate: serverTimestamp(),
       });
 
       // Store location update history
@@ -42,12 +42,12 @@ class UserLocationService {
   private async storeLocationUpdate(location: Location): Promise<void> {
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser) return;
+      if (!currentUser) {return;}
 
       await addDoc(this.locationUpdatesCollection, {
         userId: currentUser.uid,
         location: new GeoPoint(location.latitude, location.longitude),
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
       });
     } catch (error) {
       console.error('Error storing location update:', error);
@@ -68,12 +68,12 @@ class UserLocationService {
       usersSnapshot.forEach(doc => {
         const userData = doc.data();
         if (
-          doc.id !== currentUser.uid && 
+          doc.id !== currentUser.uid &&
           userData.location instanceof GeoPoint
         ) {
           const userLocation: Location = {
             latitude: userData.location.latitude,
-            longitude: userData.location.longitude
+            longitude: userData.location.longitude,
           };
 
           const distance = calculateDistance(location, userLocation);
@@ -85,7 +85,7 @@ class UserLocationService {
               lastActive: userData.lastActive?.toDate() || new Date(),
               isOnline: userData.isOnline || false,
               avatar: userData.avatar,
-              distance
+              distance,
             });
           }
         }
@@ -105,7 +105,7 @@ class UserLocationService {
     const success = (position: GeolocationPosition) => {
       const location: Location = {
         latitude: position.coords.latitude,
-        longitude: position.coords.longitude
+        longitude: position.coords.longitude,
       };
       onLocationUpdate(location);
       this.updateUserLocation(location).catch(console.error);
@@ -118,7 +118,7 @@ class UserLocationService {
     watchId = navigator.geolocation.watchPosition(success, error, {
       enableHighAccuracy: true,
       timeout: 5000,
-      maximumAge: 0
+      maximumAge: 0,
     });
 
     // Return cleanup function
@@ -130,4 +130,4 @@ class UserLocationService {
   }
 }
 
-export const userLocationService = UserLocationService.getInstance(); 
+export const userLocationService = UserLocationService.getInstance();

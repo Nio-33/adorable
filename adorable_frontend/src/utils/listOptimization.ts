@@ -13,9 +13,9 @@ export interface UsePaginationOptions {
   loadingDelay?: number;
 }
 
-export function usePagination({ 
-  initialLimit = 20, 
-  loadingDelay = 500 
+export function usePagination({
+  initialLimit = 20,
+  loadingDelay = 500,
 }: UsePaginationOptions = {}) {
   const [state, setState] = useState<PaginationState>({
     page: 1,
@@ -74,7 +74,7 @@ class CacheManager {
 
   get(key: string): any | null {
     const item = this.cache.get(key);
-    if (!item) return null;
+    if (!item) {return null;}
     if (Date.now() > item.timestamp) {
       this.cache.delete(key);
       return null;
@@ -94,7 +94,7 @@ export function withCache<T>(
   config: CacheConfig
 ): Promise<T> {
   const cached = cacheManager.get(config.key);
-  if (cached) return Promise.resolve(cached);
+  if (cached) {return Promise.resolve(cached);}
 
   return fetcher().then(data => {
     cacheManager.set(config.key, data, config.maxAge);
@@ -130,4 +130,4 @@ export function getListOptimizationProps<T>({
     keyExtractor,
     getItemLayout,
   };
-} 
+}

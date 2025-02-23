@@ -1,79 +1,72 @@
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
 from django.utils.translation import gettext_lazy as _
-from users.models import User
+from django.conf import settings
 
-class Place(models.Model):
-    """Model for storing place information"""
+
+class Location(models.Model):
+    """Model for storing location information."""
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='locations',
+        verbose_name=_('user')
+    )
+    
     name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    address = models.CharField(max_length=255)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    category = models.CharField(max_length=50)
-    tags = ArrayField(models.CharField(max_length=50), blank=True, default=list)
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
-    total_ratings = models.IntegerField(default=0)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
+    address = models.CharField(max_length=500)
+    city = models.CharField(_('city'), max_length=100)
+    state = models.CharField(_('state'), max_length=100, blank=True)
+    country = models.CharField(_('country'), max_length=100)
+    postal_code = models.CharField(_('postal code'), max_length=20)
+    
+    latitude = models.DecimalField(
+        _('latitude'),
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True
+    )
+    longitude = models.DecimalField(
+        _('longitude'),
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True
+    )
+    
+    type = models.CharField(max_length=50, choices=[
+        ('home', 'Home'),
+        ('work', 'Work'),
+        ('favorite', 'Favorite'),
+        ('other', 'Other')
+    ])
+    
+    is_primary = models.BooleanField(_('primary'), default=False)
+    is_billing = models.BooleanField(_('billing'), default=False)
+    is_shipping = models.BooleanField(_('shipping'), default=False)
+    
+    notes = models.TextField(_('notes'), blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    
     class Meta:
-        db_table = 'places'
+        verbose_name = _('location')
+        verbose_name_plural = _('locations')
+        ordering = ['-is_primary', '-created_at']
         indexes = [
+            models.Index(fields=['user', 'is_primary']),
             models.Index(fields=['latitude', 'longitude']),
-            models.Index(fields=['category']),
         ]
-
+        unique_together = [['user', 'name']]
+    
     def __str__(self):
-        return self.name
-
-class PlacePhoto(models.Model):
-    """Model for storing place photos"""
-    place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name='photos')
-    photo = models.ImageField(upload_to='place_photos/')
-    caption = models.CharField(max_length=255, blank=True)
-    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'place_photos'
-
-class PlaceReview(models.Model):
-    """Model for storing place reviews"""
-    place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name='reviews')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    rating = models.IntegerField()
-    review = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'place_reviews'
-        unique_together = ['place', 'user']
-
-class UserLocation(models.Model):
-    """Model for tracking user locations"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='locations')
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_sharing = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = 'user_locations'
-        indexes = [
-            models.Index(fields=['user', 'timestamp']),
-            models.Index(fields=['latitude', 'longitude']),
-        ]
-
-class SavedPlace(models.Model):
-    """Model for users' saved places"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_places')
-    place = models.ForeignKey(Place, on_delete=models.CASCADE)
-    saved_at = models.DateTimeField(auto_now_add=True)
-    notes = models.TextField(blank=True)
-
-    class Meta:
-        db_table = 'saved_places'
-        unique_together = ['user', 'place'] 
+        return f"{self.name} ({self.type}) - {self.user.username}"
+    
+    def save(self, *args, **kwargs):
+        """Ensure only one primary location per user."""
+        if self.is_primary:
+            Location.objects.filter(user=self.user).update(is_primary=False)
+        super().save(*args, **kwargs) 

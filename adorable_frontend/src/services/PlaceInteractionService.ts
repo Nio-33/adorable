@@ -57,7 +57,7 @@ class PlaceInteractionService {
   async getSavedPlaces(userId: string): Promise<SavedPlace[]> {
     const q = query(this.savedPlacesCollection, where('userId', '==', userId));
     const snapshot = await getDocs(q);
-    
+
     return snapshot.docs.map(doc => ({
       placeId: doc.data().placeId,
       placeName: doc.data().placeName,
@@ -77,7 +77,7 @@ class PlaceInteractionService {
   async getCheckIns(userId: string): Promise<CheckIn[]> {
     const q = query(this.checkInsCollection, where('userId', '==', userId));
     const snapshot = await getDocs(q);
-    
+
     return snapshot.docs.map(doc => ({
       placeId: doc.data().placeId,
       checkedInAt: doc.data().checkedInAt.toDate(),
@@ -105,7 +105,7 @@ class PlaceInteractionService {
   async getPlacePhotos(placeId: string): Promise<PlacePhoto[]> {
     const q = query(this.photosCollection, where('placeId', '==', placeId));
     const snapshot = await getDocs(q);
-    
+
     return snapshot.docs.map(doc => ({
       url: doc.data().url,
       uploadedBy: doc.data().uploadedBy,
@@ -120,14 +120,14 @@ class PlaceInteractionService {
       where('placeId', '==', placeId)
     );
     const snapshot = await getDocs(q);
-    
+
     if (snapshot.empty) {
       return null;
     }
 
     const reviewDoc = snapshot.docs[0];
     const data = reviewDoc.data();
-    
+
     return {
       rating: data.rating,
       text: data.text,
@@ -155,4 +155,4 @@ class PlaceInteractionService {
   }
 }
 
-export const placeInteractionService = PlaceInteractionService.getInstance(); 
+export const placeInteractionService = PlaceInteractionService.getInstance();

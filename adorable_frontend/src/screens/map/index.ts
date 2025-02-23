@@ -1,4 +1,4 @@
 export * from './MapScreen';
 export * from './PlaceDetailsScreen';
 export * from './SearchResultsScreen';
-export * from './navigation/MapNavigator'; 
+export * from './navigation/MapNavigator';

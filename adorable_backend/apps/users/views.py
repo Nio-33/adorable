@@ -1,60 +1,92 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework import status, generics
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from .models import User, Profile, UserPreference
-from .serializers import UserSerializer, ProfileSerializer, UserPreferenceSerializer
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
+from .serializers import (
+    UserSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    PasswordResetSerializer,
+    EmailVerificationSerializer,
+)
 
-class UserViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for viewing and editing user instances.
-    """
-    queryset = User.objects.all()
+User = get_user_model()
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data
+        })
+
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            refresh_token = request.data["refresh"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        """Filter queryset based on user permissions"""
-        if self.request.user.is_staff:
-            return User.objects.all()
-        return User.objects.filter(id=self.request.user.id)
+    def get_object(self):
+        return self.request.user
 
-    @action(detail=False, methods=['get'])
-    def me(self, request):
-        """Get current user's information"""
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = PasswordResetSerializer
 
-class ProfileViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for viewing and editing profile instances.
-    """
-    queryset = Profile.objects.all()
-    serializer_class = ProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"detail": "Password reset email has been sent."},
+            status=status.HTTP_200_OK
+        )
 
-    def get_queryset(self):
-        """Filter queryset based on user permissions"""
-        if self.request.user.is_staff:
-            return Profile.objects.all()
-        return Profile.objects.filter(user=self.request.user)
+class EmailVerificationView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = EmailVerificationSerializer
 
-    def perform_create(self, serializer):
-        """Set user when creating a profile"""
-        serializer.save(user=self.request.user)
-
-class UserPreferenceViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for viewing and editing user preferences.
-    """
-    queryset = UserPreference.objects.all()
-    serializer_class = UserPreferenceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        """Filter queryset to user's preferences"""
-        return UserPreference.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        """Set user when creating preferences"""
-        serializer.save(user=self.request.user) 
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"detail": "Email has been verified."},
+            status=status.HTTP_200_OK
+        ) 

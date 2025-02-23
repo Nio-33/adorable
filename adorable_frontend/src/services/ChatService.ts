@@ -76,10 +76,10 @@ export class ChatService {
 
       const rooms = snapshot.val() || {};
       return Object.values(rooms)
-        .filter((room: unknown): room is ChatRoom => 
-          typeof room === 'object' && 
-          room !== null && 
-          'participants' in room && 
+        .filter((room: unknown): room is ChatRoom =>
+          typeof room === 'object' &&
+          room !== null &&
+          'participants' in room &&
           Array.isArray((room as ChatRoom).participants) &&
           (room as ChatRoom).participants.some(p => p.id === userId)
         );
@@ -123,7 +123,7 @@ export class ChatService {
         .ref(`${this.CHAT_ROOMS_REF}/${roomId}`)
         .once('value');
       const room = roomSnapshot.val();
-      
+
       const updates: { [key: string]: any } = {};
       room.participants
         .filter((participant: ChatUser) => participant.id !== sender.id)
@@ -184,7 +184,7 @@ export class ChatService {
 
   subscribeToMessages(roomId: string, callback: (message: ChatMessage) => void): () => void {
     const messagesRef = database().ref(`${this.MESSAGES_REF}/${roomId}`);
-    
+
     messagesRef.on('child_added', (snapshot) => {
       const message = snapshot.val();
       callback(message);
@@ -227,7 +227,7 @@ export class ChatService {
 
   subscribeToOnlineStatus(userId: string, callback: (status: { isOnline: boolean; lastSeen: number }) => void): () => void {
     const statusRef = database().ref(`${this.ONLINE_STATUS_REF}/${userId}`);
-    
+
     statusRef.on('value', (snapshot) => {
       const status = snapshot.val() || { isOnline: false, lastSeen: Date.now() };
       callback(status);
@@ -242,7 +242,7 @@ export class ChatService {
     }
 
     this.onlineStatusRef = database().ref(`${this.ONLINE_STATUS_REF}/${userId}`);
-    
+
     // Set online status when connected
     database().ref('.info/connected').on('value', async (snapshot) => {
       if (snapshot.val() === false) {
@@ -287,7 +287,7 @@ export class ChatService {
 
   subscribeToTypingStatus(roomId: string, callback: (typingUsers: string[]) => void): () => void {
     const typingRef = database().ref(`${this.TYPING_STATUS_REF}/${roomId}`);
-    
+
     typingRef.on('value', (snapshot) => {
       const typingStatus = snapshot.val() || {};
       const now = Date.now();
@@ -296,7 +296,7 @@ export class ChatService {
           return status.isTyping && now - status.timestamp < 10000; // Consider typing timeout after 10 seconds
         })
         .map(([userId]) => userId);
-      
+
       callback(typingUsers);
     });
 
@@ -304,4 +304,4 @@ export class ChatService {
   }
 }
 
-export const chatService = ChatService.getInstance(); 
+export const chatService = ChatService.getInstance();

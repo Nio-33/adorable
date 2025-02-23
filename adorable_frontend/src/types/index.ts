@@ -5,6 +5,7 @@ export interface User {
   username: string;
   displayName: string;
   photoURL?: string;
+  avatarUrl?: string;
   bio?: string;
   location?: {
     latitude: number;
@@ -12,6 +13,9 @@ export interface User {
   };
   createdAt: Date;
   updatedAt: Date;
+  lastActive?: Date;
+  isOnline: boolean;
+  isTyping?: Record<string, boolean>; // chatRoomId -> isTyping
 }
 
 // Authentication types
@@ -20,6 +24,48 @@ export interface AuthState {
   user: User | null;
   loading: boolean;
   error: string | null;
+}
+
+// Chat related types
+export interface MessageReaction {
+  userId: string;
+  type: '👍' | '❤️' | '😂' | '😮' | '😢' | '😡';
+  createdAt: Date;
+}
+
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'error';
+
+export interface Message {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  type: 'text' | 'image' | 'location';
+  timestamp: Date;
+  status: MessageStatus;
+  reactions?: Record<string, MessageReaction>; // messageId -> reaction
+  replyTo?: string; // ID of the message being replied to
+  metadata?: {
+    location?: {
+      latitude: number;
+      longitude: number;
+    };
+    imageUrl?: string;
+    imageWidth?: number;
+    imageHeight?: number;
+  };
+  editedAt?: Date;
+  deletedAt?: Date;
+}
+
+export interface ChatRoom {
+  id: string;
+  participants: User[];
+  lastMessage?: Message;
+  updatedAt: Date;
+  unreadCount?: Record<string, number>;
+  typingUsers?: string[]; // Array of user IDs currently typing
+  pinnedMessages?: string[]; // Array of pinned message IDs
 }
 
 // Place related types
@@ -52,24 +98,6 @@ export interface Review {
   updatedAt: string;
 }
 
-// Chat related types
-export interface Message {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  content: string;
-  type: 'text' | 'image' | 'location';
-  timestamp: Date;
-  read: boolean;
-}
-
-export interface ChatRoom {
-  id: string;
-  participants: string[];
-  lastMessage?: Message;
-  updatedAt: Date;
-}
-
 // Navigation types
 export type RootStackParamList = {
   Auth: undefined;
@@ -91,4 +119,4 @@ export interface ApiError {
   code: string;
   message: string;
   details?: unknown;
-} 
+}

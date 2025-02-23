@@ -58,7 +58,7 @@ export const PeopleScreen: React.FC = () => {
   const navigation = useNavigation<PeopleNavigationProp>();
   const { user } = useAuth();
   const { location } = useLocation();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [nearbyUsers, setNearbyUsers] = useState<UserProfile[]>([]);
   const [friends, setFriends] = useState<UserProfile[]>([]);
@@ -68,7 +68,7 @@ export const PeopleScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
-    if (!user || !location) return;
+    if (!user || !location) {return;}
     try {
       setError(null);
       const [loadedNearbyUsers, loadedFriends, loadedRequests] = await Promise.all([
@@ -109,7 +109,7 @@ export const PeopleScreen: React.FC = () => {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {return;}
     try {
       setLoading(true);
       const results = await peopleService.searchUsers(searchQuery.trim());
@@ -327,4 +327,4 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
   },
-}); 
+});

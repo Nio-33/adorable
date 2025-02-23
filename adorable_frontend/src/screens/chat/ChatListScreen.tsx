@@ -30,7 +30,7 @@ export const ChatListScreen: React.FC = () => {
   const [onlineStatus, setOnlineStatus] = useState<{ [userId: string]: boolean }>({});
 
   const loadChatRooms = async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       setError(null);
       const rooms = await chatService.getChatRooms(user.uid);
@@ -55,10 +55,10 @@ export const ChatListScreen: React.FC = () => {
 
   useEffect(() => {
     loadChatRooms();
-  }, [user]);
+  }, [loadChatRooms]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {return;}
 
     const unsubscribers = new Map<string, () => void>();
 
@@ -87,7 +87,7 @@ export const ChatListScreen: React.FC = () => {
   }, [chatRooms, user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {return;}
     chatService.startOnlineStatusTracking(user.uid);
     return () => chatService.stopOnlineStatusTracking();
   }, [user]);
@@ -245,4 +245,4 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 12,
   },
-}); 
+});

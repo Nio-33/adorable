@@ -51,4 +51,4 @@ const styles = StyleSheet.create({
     color: '#1e1b4b',
     fontWeight: '600',
   },
-}); 
+});

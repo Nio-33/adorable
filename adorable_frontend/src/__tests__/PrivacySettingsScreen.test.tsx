@@ -16,4 +16,4 @@ describe('PrivacySettingsScreen', () => {
     const { getByText } = renderWithNavigation(<PrivacySettingsScreen />);
     expect(getByText('Privacy Settings')).toBeTruthy();
   });
-}); 
+});

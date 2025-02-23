@@ -24,4 +24,4 @@ export const SettingsNavigator: React.FC = () => {
       <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
     </Stack.Navigator>
   );
-}; 
+};

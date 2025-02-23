@@ -11,7 +11,7 @@ export interface ErrorConfig {
 export class AppError extends Error {
   code: string;
   retry?: boolean;
-  
+
   constructor(message: string, code: string, retry: boolean = true) {
     super(message);
     this.code = code;
@@ -91,7 +91,7 @@ export async function withErrorHandling<T>(
   const executeWithRetry = async (): Promise<T> => {
     try {
       const networkState = await NetInfo.fetch();
-      
+
       if (!networkState.isConnected) {
         if (useOfflineQueue) {
           offlineQueue.add(() => action());
@@ -155,4 +155,4 @@ export const platformSpecificHandler = Platform.select({
   default: (error: Error) => {
     console.error('Error:', error);
   },
-}); 
+});

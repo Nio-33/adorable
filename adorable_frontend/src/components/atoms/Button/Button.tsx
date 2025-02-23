@@ -1,166 +1,139 @@
 import React from 'react';
 import {
   TouchableOpacity,
-  Text,
   ActivityIndicator,
   StyleSheet,
   ViewStyle,
   TextStyle,
   StyleProp,
-  View,
 } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../../config/theme';
-import { ButtonVariant, ButtonSize, BaseComponentProps } from '../../common/types';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../../../config/theme';
+import { Typography } from '../Typography/Typography';
 
-export interface ButtonProps extends BaseComponentProps {
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'text';
+type ButtonSize = 'small' | 'medium' | 'large';
+
+interface ButtonProps {
+  children: React.ReactNode;
   onPress: () => void;
   variant?: ButtonVariant;
   size?: ButtonSize;
   disabled?: boolean;
   loading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   fullWidth?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
+  children,
   onPress,
   variant = 'primary',
   size = 'medium',
   disabled = false,
   loading = false,
-  leftIcon,
-  rightIcon,
-  children,
   style,
+  textStyle,
   fullWidth = false,
-  testID,
 }) => {
-  const buttonStyles: StyleProp<ViewStyle> = [
-    styles.base,
-    styles[`${variant}Container`],
-    styles[`${size}Container`],
-    fullWidth && styles.fullWidth,
-    disabled && styles.disabled,
-    style,
-  ];
+  const getBackgroundColor = () => {
+    if (disabled) {return COLORS.disabled;}
+    switch (variant) {
+      case 'primary':
+        return COLORS.primary.main;
+      case 'secondary':
+        return COLORS.secondary.main;
+      case 'outline':
+      case 'text':
+        return 'transparent';
+      default:
+        return COLORS.primary.main;
+    }
+  };
 
-  const textStyles: StyleProp<TextStyle> = [
-    styles.textBase,
-    styles[`${variant}Text`],
-    styles[`${size}Text`],
-    disabled && styles.disabledText,
-  ];
+  const getTextColor = () => {
+    if (disabled) {return COLORS.text.disabled;}
+    switch (variant) {
+      case 'primary':
+      case 'secondary':
+        return COLORS.text.inverse;
+      case 'outline':
+      case 'text':
+        return COLORS.primary.main;
+      default:
+        return COLORS.text.inverse;
+    }
+  };
 
-  const loadingColor = variant === 'primary' ? COLORS.text.inverse : COLORS.primary;
+  const getBorderColor = () => {
+    if (disabled) {return COLORS.disabled;}
+    switch (variant) {
+      case 'outline':
+        return COLORS.primary.main;
+      default:
+        return 'transparent';
+    }
+  };
+
+  const getPadding = () => {
+    switch (size) {
+      case 'small':
+        return SPACING.sm;
+      case 'large':
+        return SPACING.lg;
+      default:
+        return SPACING.md;
+    }
+  };
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled || loading}
-      style={buttonStyles}
-      testID={testID}
-      activeOpacity={0.8}
+      style={[
+        styles.button,
+        {
+          backgroundColor: getBackgroundColor(),
+          borderColor: getBorderColor(),
+          padding: getPadding(),
+          width: fullWidth ? '100%' : undefined,
+        },
+        variant === 'text' && styles.textButton,
+        style,
+      ]}
     >
       {loading ? (
-        <ActivityIndicator color={loadingColor} size="small" />
+        <ActivityIndicator
+          color={variant === 'primary' ? COLORS.text.inverse : COLORS.primary.main}
+          size="small"
+        />
       ) : (
-        <>
-          {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
-          <Text style={textStyles}>{children}</Text>
-          {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
-        </>
+        <Typography
+          variant="button"
+          color={getTextColor()}
+          style={[styles.text, textStyle]}
+        >
+          {children}
+        </Typography>
       )}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  base: {
+  button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: BORDER_RADIUS.md,
-  },
-  fullWidth: {
-    width: '100%',
-  },
-  // Container variants
-  primaryContainer: {
-    backgroundColor: COLORS.primary,
-  },
-  secondaryContainer: {
-    backgroundColor: COLORS.secondary,
-  },
-  outlineContainer: {
-    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: 'transparent',
   },
-  textContainer: {
-    backgroundColor: 'transparent',
+  textButton: {
+    padding: 0,
+    borderWidth: 0,
   },
-  // Container sizes
-  smallContainer: {
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    minHeight: 32,
-  },
-  mediumContainer: {
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    minHeight: 40,
-  },
-  largeContainer: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    minHeight: 48,
-  },
-  // Text base style
-  textBase: {
+  text: {
     textAlign: 'center',
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
   },
-  // Text variants
-  primaryText: {
-    color: COLORS.text.inverse,
-    fontSize: TYPOGRAPHY.fontSize.md,
-  },
-  secondaryText: {
-    color: COLORS.text.inverse,
-    fontSize: TYPOGRAPHY.fontSize.md,
-  },
-  outlineText: {
-    color: COLORS.primary,
-    fontSize: TYPOGRAPHY.fontSize.md,
-  },
-  textText: {
-    color: COLORS.primary,
-    fontSize: TYPOGRAPHY.fontSize.md,
-  },
-  // Text sizes
-  smallText: {
-    fontSize: TYPOGRAPHY.fontSize.sm,
-  },
-  mediumText: {
-    fontSize: TYPOGRAPHY.fontSize.md,
-  },
-  largeText: {
-    fontSize: TYPOGRAPHY.fontSize.lg,
-  },
-  // States
-  disabled: {
-    opacity: 0.5,
-  },
-  disabledText: {
-    opacity: 0.5,
-  },
-  // Icon styles
-  leftIcon: {
-    marginRight: SPACING.xs,
-  },
-  rightIcon: {
-    marginLeft: SPACING.xs,
-  },
-}); 
+});

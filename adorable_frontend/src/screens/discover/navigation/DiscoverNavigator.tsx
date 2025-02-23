@@ -80,4 +80,4 @@ export const DiscoverNavigator: React.FC = () => {
       />
     </Stack.Navigator>
   );
-}; 
+};

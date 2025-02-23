@@ -15,4 +15,4 @@ export const Icon: React.FC<IconProps> = ({
   strokeWidth = 2,
 }) => {
   return <IconComponent size={size} color={color} strokeWidth={strokeWidth} />;
-}; 
+};

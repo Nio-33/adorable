@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { firebaseService } from '../services/firebase';
-import { Message, ChatRoom } from '../types';
+import { Message, ChatRoom, MessageReaction, MessageStatus, User } from '../types';
 
 interface ChatState {
   messages: Message[];
@@ -23,7 +23,14 @@ interface UseChat {
   hasMore: boolean;
   error: string | undefined;
   searchQuery: string;
-  sendMessage: (content: string, type?: Message['type']) => Promise<void>;
+  sendMessage: (content: string, type?: Message['type'], replyToId?: string) => Promise<void>;
+  editMessage: (messageId: string, newContent: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
+  addReaction: (messageId: string, reactionType: MessageReaction['type']) => Promise<void>;
+  removeReaction: (messageId: string) => Promise<void>;
+  setTypingStatus: (isTyping: boolean) => void;
+  pinMessage: (messageId: string) => Promise<void>;
+  unpinMessage: (messageId: string) => Promise<void>;
   loadMoreMessages: () => void;
   markAsRead: () => Promise<void>;
   getChatRoom: (participantId: string) => Promise<void>;
@@ -33,8 +40,6 @@ interface UseChat {
   sendImage: (uri: string) => Promise<void>;
   sendLocation: (latitude: number, longitude: number) => Promise<void>;
 }
-
-const MESSAGES_PER_PAGE = 20;
 
 export function useChat(currentUserId: string, chatRoomId?: string): UseChat {
   const [state, setState] = useState<ChatState>({
@@ -49,57 +54,193 @@ export function useChat(currentUserId: string, chatRoomId?: string): UseChat {
     searchQuery: '',
   });
 
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const messageSubscriptionRef = useRef<() => void>();
+  const roomSubscriptionRef = useRef<() => void>();
+
   const handleError = (error: any) => {
     console.error('Chat error:', error);
-    setState(prev => ({
-      ...prev,
-      error: error.message || 'An error occurred',
-      loading: false,
-      refreshing: false,
-    }));
+    setState(prev => ({ ...prev, error: error.message, loading: false }));
   };
 
-  // Fetch chat rooms
-  const fetchChatRooms = useCallback(() => {
-    try {
-      setState(prev => ({ ...prev, loading: true, error: undefined }));
-      
-      const unsubscribe = firebaseService.subscribeToChatRooms(currentUserId, (chatRooms) => {
-        setState(prev => ({
-          ...prev,
-          chatRooms: chatRooms as ChatRoom[],
-          loading: false,
-          error: undefined,
-        }));
-      });
+  const sendMessage = useCallback(async (
+    content: string,
+    type: Message['type'] = 'text',
+    replyToId?: string
+  ) => {
+    if (!state.chatRoom) {return;}
 
-      return () => {
-        unsubscribe();
+    try {
+      const message: Omit<Message, 'id'> = {
+        senderId: currentUserId,
+        receiverId: state.chatRoom.participants.find(p => p.id !== currentUserId)?.id || '',
+        content,
+        type,
+        timestamp: new Date(),
+        status: 'sending',
+        replyTo: replyToId,
       };
-    } catch (error) {
-      handleError(error);
-    }
-  }, [currentUserId]);
 
-  // Refresh chat rooms
-  const refreshChatRooms = useCallback(async () => {
-    try {
-      setState(prev => ({ ...prev, refreshing: true, error: undefined }));
-      fetchChatRooms();
-      setState(prev => ({ ...prev, refreshing: false }));
+      const sentMessage = await firebaseService.sendMessage(state.chatRoom.id, message);
+      await firebaseService.updateChatRoom(state.chatRoom.id, {
+        lastMessage: sentMessage,
+        updatedAt: new Date(),
+      });
     } catch (error) {
       handleError(error);
     }
-  }, [fetchChatRooms]);
+  }, [currentUserId, state.chatRoom]);
+
+  const editMessage = useCallback(async (messageId: string, newContent: string) => {
+    if (!state.chatRoom) {return;}
+
+    try {
+      const message = state.messages.find(m => m.id === messageId);
+      if (!message || message.senderId !== currentUserId) {return;}
+
+      await firebaseService.updateMessages(state.chatRoom.id, {
+        [messageId]: {
+          ...message,
+          content: newContent,
+          editedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  }, [currentUserId, state.chatRoom, state.messages]);
+
+  const deleteMessage = useCallback(async (messageId: string) => {
+    if (!state.chatRoom) {return;}
+
+    try {
+      const message = state.messages.find(m => m.id === messageId);
+      if (!message || message.senderId !== currentUserId) {return;}
+
+      await firebaseService.updateMessages(state.chatRoom.id, {
+        [messageId]: {
+          ...message,
+          deletedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  }, [currentUserId, state.chatRoom, state.messages]);
+
+  const addReaction = useCallback(async (messageId: string, reactionType: MessageReaction['type']) => {
+    if (!state.chatRoom) {return;}
+
+    try {
+      const message = state.messages.find(m => m.id === messageId);
+      if (!message) {return;}
+
+      const reaction: MessageReaction = {
+        userId: currentUserId,
+        type: reactionType,
+        createdAt: new Date(),
+      };
+
+      await firebaseService.updateMessages(state.chatRoom.id, {
+        [messageId]: {
+          ...message,
+          reactions: {
+            ...message.reactions,
+            [currentUserId]: reaction,
+          },
+        },
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  }, [currentUserId, state.chatRoom, state.messages]);
+
+  const removeReaction = useCallback(async (messageId: string) => {
+    if (!state.chatRoom) {return;}
+
+    try {
+      const message = state.messages.find(m => m.id === messageId);
+      if (!message || !message.reactions?.[currentUserId]) {return;}
+
+      const { [currentUserId]: _, ...remainingReactions } = message.reactions;
+      await firebaseService.updateMessages(state.chatRoom.id, {
+        [messageId]: {
+          ...message,
+          reactions: remainingReactions,
+        },
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  }, [currentUserId, state.chatRoom, state.messages]);
+
+  const setTypingStatus = useCallback((isTyping: boolean) => {
+    if (!state.chatRoom?.id) {return;}
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    const updateTyping = async () => {
+      if (!state.chatRoom?.id) {return;}
+
+      try {
+        const typingUsers = state.chatRoom.typingUsers || [];
+        const updatedTypingUsers = isTyping
+          ? [...new Set([...typingUsers, currentUserId])]
+          : typingUsers.filter(id => id !== currentUserId);
+
+        await firebaseService.updateChatRoom(state.chatRoom.id, {
+          typingUsers: updatedTypingUsers,
+        });
+      } catch (error) {
+        handleError(error);
+      }
+    };
+
+    updateTyping();
+
+    if (isTyping) {
+      typingTimeoutRef.current = setTimeout(() => {
+        setTypingStatus(false);
+      }, 3000);
+    }
+  }, [currentUserId, state.chatRoom]);
+
+  const pinMessage = useCallback(async (messageId: string) => {
+    if (!state.chatRoom) {return;}
+
+    try {
+      const pinnedMessages = state.chatRoom.pinnedMessages || [];
+      await firebaseService.updateChatRoom(state.chatRoom.id, {
+        pinnedMessages: [...new Set([...pinnedMessages, messageId])],
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  }, [state.chatRoom]);
+
+  const unpinMessage = useCallback(async (messageId: string) => {
+    if (!state.chatRoom) {return;}
+
+    try {
+      const pinnedMessages = state.chatRoom.pinnedMessages || [];
+      await firebaseService.updateChatRoom(state.chatRoom.id, {
+        pinnedMessages: pinnedMessages.filter(id => id !== messageId),
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  }, [state.chatRoom]);
 
   // Get or create chat room
   const getChatRoom = useCallback(async (participantId: string) => {
     try {
       setState(prev => ({ ...prev, loading: true, error: undefined }));
-      
+
       // Check if chat room exists
       const existingRoom = state.chatRooms.find(room =>
-        room.participants.includes(participantId)
+        room.participants.some(p => p.id === participantId)
       );
 
       if (existingRoom) {
@@ -111,9 +252,17 @@ export function useChat(currentUserId: string, chatRoomId?: string): UseChat {
         return;
       }
 
+      // Get participant user data
+      const participantUser = await firebaseService.getUserById(participantId);
+      const currentUser = await firebaseService.getUserById(currentUserId);
+
+      if (!participantUser || !currentUser) {
+        throw new Error('User not found');
+      }
+
       // Create new chat room
       const newRoom = await firebaseService.createChatRoom({
-        participants: [currentUserId, participantId],
+        participants: [currentUser, participantUser],
         updatedAt: new Date(),
       });
 
@@ -127,139 +276,125 @@ export function useChat(currentUserId: string, chatRoomId?: string): UseChat {
     }
   }, [currentUserId, state.chatRooms]);
 
-  // Send message
-  const sendMessage = useCallback(async (content: string, type: Message['type'] = 'text') => {
-    if (!chatRoomId || !content.trim()) return;
+  // Load more messages
+  const loadMoreMessages = useCallback(() => {
+    if (!state.hasMore || !chatRoomId) {return;}
 
-    try {
-      const message: Omit<Message, 'id'> = {
-        senderId: currentUserId,
-        receiverId: state.chatRoom?.participants.find(id => id !== currentUserId) || '',
-        content,
-        type,
-        timestamp: new Date(),
-        read: false,
-      };
-
-      const sentMessage = await firebaseService.sendMessage(chatRoomId, message);
-
-      // Update chat room's last message
-      await firebaseService.updateChatRoom(chatRoomId, {
-        lastMessage: sentMessage,
-        updatedAt: message.timestamp,
-      });
-    } catch (error) {
-      handleError(error);
-    }
-  }, [currentUserId, chatRoomId, state.chatRoom]);
-
-  // Send image message
-  const sendImage = useCallback(async (uri: string) => {
-    try {
-      // Upload image to Firebase Storage
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      const imageUrl = await firebaseService.uploadFile(`/chat_images/${filename}`, blob);
-
-      // Send message with image URL
-      await sendMessage(imageUrl, 'image');
-    } catch (error) {
-      handleError(error);
-    }
-  }, [sendMessage]);
-
-  // Send location message
-  const sendLocation = useCallback(async (latitude: number, longitude: number) => {
-    try {
-      const locationString = JSON.stringify({ latitude, longitude });
-      await sendMessage(locationString, 'location');
-    } catch (error) {
-      handleError(error);
-    }
-  }, [sendMessage]);
+    setState(prev => ({ ...prev, loading: true }));
+    // Implement pagination logic here
+  }, [chatRoomId, state.hasMore]);
 
   // Mark messages as read
   const markAsRead = useCallback(async () => {
-    if (!chatRoomId) return;
+    if (!state.chatRoom?.id || !state.messages.length) {return;}
 
     try {
       const unreadMessages = state.messages.filter(
-        msg => !msg.read && msg.senderId !== currentUserId
+        msg => msg.senderId !== currentUserId && msg.status !== 'read'
       );
 
-      if (unreadMessages.length > 0) {
-        await firebaseService.markMessagesAsRead(
-          chatRoomId,
-          unreadMessages.map(msg => msg.id)
-        );
+      if (unreadMessages.length === 0) {return;}
+
+      const updates = unreadMessages.reduce((acc, msg) => ({
+        ...acc,
+        [msg.id]: {
+          ...msg,
+          status: 'read' as MessageStatus,
+        },
+      }), {});
+
+      await firebaseService.updateMessages(state.chatRoom.id, updates);
+
+      // Update unread count in chat room
+      const otherUserId = state.chatRoom.participants.find(p => p.id !== currentUserId)?.id;
+      if (otherUserId) {
+        await firebaseService.updateChatRoom(state.chatRoom.id, {
+          unreadCount: {
+            ...state.chatRoom.unreadCount,
+            [currentUserId]: 0,
+          },
+        });
       }
     } catch (error) {
       handleError(error);
     }
-  }, [chatRoomId, currentUserId, state.messages]);
+  }, [currentUserId, state.chatRoom, state.messages]);
+
+  // Fetch chat rooms
+  const fetchChatRooms = useCallback(() => {
+    setState(prev => ({ ...prev, loading: true }));
+
+    const unsubscribe = firebaseService.subscribeToChatRooms(
+      currentUserId,
+      (rooms) => {
+        setState(prev => ({
+          ...prev,
+          chatRooms: rooms,
+          loading: false,
+        }));
+      }
+    );
+
+    return unsubscribe;
+  }, [currentUserId]);
+
+  // Refresh chat rooms
+  const refreshChatRooms = useCallback(async () => {
+    setState(prev => ({ ...prev, refreshing: true }));
+    fetchChatRooms();
+  }, [fetchChatRooms]);
 
   // Set search query
   const setSearchQuery = useCallback((query: string) => {
     setState(prev => ({ ...prev, searchQuery: query }));
   }, []);
 
-  // Load more messages
-  const loadMoreMessages = useCallback(() => {
-    if (!chatRoomId || !state.hasMore || state.loading) return;
-
+  // Send image
+  const sendImage = useCallback(async (uri: string) => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: undefined }));
-      
-      const unsubscribe = firebaseService.subscribeToMessages(chatRoomId, (messages) => {
-        setState(prev => ({
-          ...prev,
-          messages: messages as Message[],
-          hasMore: messages.length === MESSAGES_PER_PAGE,
-          page: prev.page + 1,
-          loading: false,
-        }));
-      });
-
-      return () => {
-        unsubscribe();
-      };
+      const imageUrl = await firebaseService.uploadChatImage(uri);
+      await sendMessage(imageUrl, 'image');
     } catch (error) {
       handleError(error);
     }
-  }, [chatRoomId, state.hasMore, state.loading]);
+  }, [sendMessage]);
+
+  // Send location
+  const sendLocation = useCallback(async (latitude: number, longitude: number) => {
+    try {
+      const locationMessage = JSON.stringify({ latitude, longitude });
+      await sendMessage(locationMessage, 'location');
+    } catch (error) {
+      handleError(error);
+    }
+  }, [sendMessage]);
 
   // Subscribe to messages
   useEffect(() => {
-    if (!chatRoomId) return;
-
-    const unsubscribe = firebaseService.subscribeToMessages(chatRoomId, (messages) => {
-      setState(prev => ({
-        ...prev,
-        messages: messages as Message[],
-        loading: false,
-      }));
-    });
+    if (chatRoomId) {
+      messageSubscriptionRef.current = firebaseService.subscribeToMessages(
+        chatRoomId,
+        (messages) => {
+          setState(prev => ({ ...prev, messages, loading: false }));
+        }
+      );
+    }
 
     return () => {
-      unsubscribe();
+      if (messageSubscriptionRef.current) {
+        messageSubscriptionRef.current();
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
   }, [chatRoomId]);
 
-  // Subscribe to chat rooms
+  // Initial chat rooms fetch
   useEffect(() => {
-    const unsubscribe = firebaseService.subscribeToChatRooms(currentUserId, (chatRooms) => {
-      setState(prev => ({
-        ...prev,
-        chatRooms: chatRooms as ChatRoom[],
-        loading: false,
-      }));
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [currentUserId]);
+    const unsubscribe = fetchChatRooms();
+    return () => unsubscribe();
+  }, [fetchChatRooms]);
 
   return {
     messages: state.messages,
@@ -271,6 +406,13 @@ export function useChat(currentUserId: string, chatRoomId?: string): UseChat {
     error: state.error,
     searchQuery: state.searchQuery,
     sendMessage,
+    editMessage,
+    deleteMessage,
+    addReaction,
+    removeReaction,
+    setTypingStatus,
+    pinMessage,
+    unpinMessage,
     loadMoreMessages,
     markAsRead,
     getChatRoom,
@@ -280,4 +422,4 @@ export function useChat(currentUserId: string, chatRoomId?: string): UseChat {
     sendImage,
     sendLocation,
   };
-} 
+}

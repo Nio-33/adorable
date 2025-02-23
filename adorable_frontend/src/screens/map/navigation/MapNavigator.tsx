@@ -50,4 +50,4 @@ export const MapNavigator: React.FC = () => {
       />
     </Stack.Navigator>
   );
-}; 
+};

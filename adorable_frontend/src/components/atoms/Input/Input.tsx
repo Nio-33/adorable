@@ -3,144 +3,80 @@ import {
   View,
   TextInput,
   StyleSheet,
+  TextInputProps,
+  StyleProp,
   ViewStyle,
   TextStyle,
-  StyleProp,
-  TouchableOpacity,
+  NativeSyntheticEvent,
+  TextInputFocusEventData,
 } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../../config/theme';
-import { InputVariant, BaseComponentProps } from '../../common/types';
-import { Typography } from '../Typography';
+import { COLORS, SPACING, TYPOGRAPHY } from '../../../config/theme';
+import { Typography } from '../Typography/Typography';
 
-export interface InputProps extends BaseComponentProps {
-  value: string;
-  onChangeText: (text: string) => void;
-  variant?: InputVariant;
-  placeholder?: string;
+export interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string;
   error?: string;
-  helperText?: string;
-  secureTextEntry?: boolean;
-  disabled?: boolean;
-  multiline?: boolean;
-  numberOfLines?: number;
-  maxLength?: number;
-  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  autoCorrect?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-  onRightIconPress?: () => void;
-  onFocus?: () => void;
-  onBlur?: () => void;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const Input: React.FC<InputProps> = ({
-  value,
-  onChangeText,
-  variant = 'default',
-  placeholder,
   label,
   error,
-  helperText,
-  secureTextEntry = false,
-  disabled = false,
-  multiline = false,
-  numberOfLines = 1,
-  maxLength,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
-  autoCorrect = false,
+  containerStyle,
+  inputStyle,
   style,
-  leftIcon,
-  rightIcon,
-  onRightIconPress,
   onFocus,
   onBlur,
-  testID,
+  ...textInputProps
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
-  const containerStyles: StyleProp<ViewStyle> = [
-    styles.container,
-    variant && styles[`${variant}Container`],
-    isFocused && styles.focusedContainer,
-    error && styles.errorContainer,
-    disabled && styles.disabledContainer,
-    style,
-  ];
-
-  const inputStyles: StyleProp<TextStyle> = [
-    styles.input,
-    variant && styles[`${variant}Input`],
-    leftIcon && styles.inputWithLeftIcon,
-    rightIcon && styles.inputWithRightIcon,
-    error && styles.errorInput,
-    disabled && styles.disabledInput,
-  ];
-
-  const handleFocus = () => {
+  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(true);
-    onFocus?.();
+    onFocus?.(e);
   };
 
-  const handleBlur = () => {
+  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(false);
-    onBlur?.();
+    onBlur?.(e);
   };
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.container, containerStyle]}>
       {label && (
         <Typography
-          variant="caption"
-          color={error ? COLORS.status.error : COLORS.text.secondary}
+          variant="body2"
+          color={error ? COLORS.error : COLORS.text.primary}
           style={styles.label}
         >
           {label}
         </Typography>
       )}
-      
-      <View style={containerStyles}>
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
-        
+      <View
+        style={[
+          styles.inputContainer,
+          isFocused && styles.focused,
+          error && styles.error,
+          style,
+        ].filter(Boolean) as StyleProp<ViewStyle>}
+      >
         <TextInput
-          style={inputStyles}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={COLORS.text.tertiary}
-          secureTextEntry={secureTextEntry}
-          editable={!disabled}
-          multiline={multiline}
-          numberOfLines={numberOfLines}
-          maxLength={maxLength}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={autoCorrect}
+          {...textInputProps}
+          style={[styles.input, inputStyle]}
+          placeholderTextColor={COLORS.text.secondary}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          testID={testID}
         />
-        
-        {rightIcon && (
-          <TouchableOpacity
-            style={styles.rightIcon}
-            onPress={onRightIconPress}
-            disabled={!onRightIconPress}
-          >
-            {rightIcon}
-          </TouchableOpacity>
-        )}
       </View>
-
-      {(error || helperText) && (
+      {error && (
         <Typography
           variant="caption"
-          color={error ? COLORS.status.error : COLORS.text.tertiary}
-          style={styles.helperText}
+          color={COLORS.error}
+          style={styles.errorText}
         >
-          {error || helperText}
+          {error}
         </Typography>
       )}
     </View>
@@ -148,70 +84,33 @@ export const Input: React.FC<InputProps> = ({
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    width: '100%',
-  },
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.background.secondary,
-  },
-  defaultContainer: {
-    borderWidth: 1,
-    borderColor: COLORS.border.light,
-  },
-  filledContainer: {
-    backgroundColor: COLORS.background.tertiary,
-  },
-  outlinedContainer: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: COLORS.border.medium,
-  },
-  focusedContainer: {
-    borderColor: COLORS.primary,
-  },
-  errorContainer: {
-    borderColor: COLORS.status.error,
-  },
-  disabledContainer: {
-    backgroundColor: COLORS.background.tertiary,
-    borderColor: COLORS.border.light,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
-    fontSize: TYPOGRAPHY.fontSize.md,
-    color: COLORS.text.primary,
-  },
-  defaultInput: {},
-  filledInput: {},
-  outlinedInput: {},
-  inputWithLeftIcon: {
-    paddingLeft: SPACING.xs,
-  },
-  inputWithRightIcon: {
-    paddingRight: SPACING.xs,
-  },
-  errorInput: {
-    color: COLORS.status.error,
-  },
-  disabledInput: {
-    color: COLORS.text.tertiary,
+    width: '100%',
   },
   label: {
     marginBottom: SPACING.xs,
   },
-  helperText: {
+  inputContainer: {
+    borderWidth: 1,
+    borderColor: COLORS.border.light,
+    borderRadius: 8,
+    backgroundColor: COLORS.background.primary,
+    overflow: 'hidden',
+  },
+  input: {
+    ...TYPOGRAPHY.body1,
+    color: COLORS.text.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    minHeight: 48,
+  },
+  focused: {
+    borderColor: COLORS.primary.main,
+  },
+  error: {
+    borderColor: COLORS.error,
+  },
+  errorText: {
     marginTop: SPACING.xs,
   },
-  leftIcon: {
-    paddingLeft: SPACING.md,
-  },
-  rightIcon: {
-    paddingRight: SPACING.md,
-  },
-}); 
+});

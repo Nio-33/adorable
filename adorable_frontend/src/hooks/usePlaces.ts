@@ -136,13 +136,13 @@ export function usePlaces(): UsePlaces {
       setState(prev => ({ ...prev, loading: true, error: undefined }));
       const response = await apiService.post<Review>(`/places/${placeId}/reviews`, reviewData);
       const transformedReview = transformData(response.data);
-      
+
       if (state.selectedPlace && state.selectedPlace.id === placeId) {
         const updatedPlace = {
           ...state.selectedPlace,
           reviews: [...(state.selectedPlace.reviews || []), transformedReview],
         };
-        
+
         setState(prev => ({
           ...prev,
           selectedPlace: updatedPlace,
@@ -186,7 +186,7 @@ export function usePlaces(): UsePlaces {
   }, []);
 
   const loadMorePlaces = useCallback(async () => {
-    if (!state.hasMore || state.loading || !currentCategory) return;
+    if (!state.hasMore || state.loading || !currentCategory) {return;}
 
     try {
       setState(prev => ({ ...prev, loading: true, error: undefined }));
@@ -214,7 +214,7 @@ export function usePlaces(): UsePlaces {
   }, [state.hasMore, state.loading, state.page, currentCategory, currentSort, currentFilters]);
 
   const refreshPlaces = useCallback(async () => {
-    if (!currentCategory) return;
+    if (!currentCategory) {return;}
 
     try {
       setState(prev => ({ ...prev, refreshing: true, error: undefined }));
@@ -285,4 +285,4 @@ export function usePlaces(): UsePlaces {
     getPopularPlaces,
     getRecommendedPlaces,
   };
-} 
+}

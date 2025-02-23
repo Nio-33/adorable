@@ -37,7 +37,7 @@ export const UserProfileScreen: React.FC = () => {
   const [sending, setSending] = useState(false);
 
   const loadData = async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       setError(null);
       const [loadedProfile, loadedFriends, loadedMutualFriends] = await Promise.all([
@@ -58,7 +58,7 @@ export const UserProfileScreen: React.FC = () => {
   };
 
   const handleAddFriend = async () => {
-    if (!user || !profile || sending) return;
+    if (!user || !profile || sending) {return;}
     try {
       setSending(true);
       const currentUser: ChatUser = {
@@ -78,7 +78,7 @@ export const UserProfileScreen: React.FC = () => {
   };
 
   const handleMessage = async () => {
-    if (!user || !profile) return;
+    if (!user || !profile) {return;}
     try {
       setSending(true);
       const participants: ChatUser[] = [
@@ -106,7 +106,7 @@ export const UserProfileScreen: React.FC = () => {
   };
 
   const handleBlock = () => {
-    if (!user || !profile) return;
+    if (!user || !profile) {return;}
     Alert.alert(
       'Block User',
       `Are you sure you want to block ${profile.displayName}?`,
@@ -377,4 +377,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-}); 
+});

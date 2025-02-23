@@ -33,28 +33,28 @@ export const SignUpScreen: React.FC = () => {
   };
 
   const validateUsername = (value: string): string | undefined => {
-    if (!value) return 'Username is required';
-    if (value.length < 3) return 'Username must be at least 3 characters';
+    if (!value) {return 'Username is required';}
+    if (value.length < 3) {return 'Username must be at least 3 characters';}
     return undefined;
   };
 
   const validateEmail = (value: string): string | undefined => {
-    if (!value) return 'Email is required';
+    if (!value) {return 'Email is required';}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return 'Invalid email address';
+    if (!emailRegex.test(value)) {return 'Invalid email address';}
     return undefined;
   };
 
   const validatePassword = (value: string): string | undefined => {
-    if (!value) return 'Password is required';
-    if (value.length < 8) return 'Password must be at least 8 characters';
+    if (!value) {return 'Password is required';}
+    if (value.length < 8) {return 'Password must be at least 8 characters';}
     return undefined;
   };
 
   const validateConfirmPassword = (value: string): string | undefined => {
     const { values } = useForm();
-    if (!value) return 'Please confirm your password';
-    if (value !== values.password) return 'Passwords do not match';
+    if (!value) {return 'Please confirm your password';}
+    if (value !== values.password) {return 'Passwords do not match';}
     return undefined;
   };
 
@@ -67,7 +67,7 @@ export const SignUpScreen: React.FC = () => {
         <Typography variant="h2" style={styles.title}>
           Create Account
         </Typography>
-        
+
         <Typography
           variant="body1"
           color={COLORS.text.secondary}
@@ -202,4 +202,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: SPACING.xl,
   },
-}); 
+});

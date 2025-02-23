@@ -78,7 +78,7 @@ export const Card: React.FC<CardProps> = ({
     return (
       <>
         {header}
-        
+
         {image && (
           <Image
             source={image}
@@ -93,7 +93,7 @@ export const Card: React.FC<CardProps> = ({
               {title}
             </Typography>
           )}
-          
+
           {subtitle && (
             <Typography
               variant="body2"
@@ -143,4 +143,4 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border.light,
     padding: SPACING.md,
   },
-}); 
+});

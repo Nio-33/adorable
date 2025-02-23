@@ -72,4 +72,4 @@ const styles = StyleSheet.create({
   text: {
     marginTop: 8,
   },
-}); 
+});

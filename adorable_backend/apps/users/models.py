@@ -1,56 +1,45 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+
 class User(AbstractUser):
-    """Extended User model for Adorable platform"""
-    phone_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
-    is_phone_verified = models.BooleanField(default=False)
-    firebase_uid = models.CharField(max_length=128, unique=True, null=True, blank=True)
+    """Custom user model for the application."""
+    
+    email = models.EmailField(_('email address'), unique=True)
+    phone_number = models.CharField(_('phone number'), max_length=20, blank=True)
+    avatar = models.ImageField(_('avatar'), upload_to='avatars/', null=True, blank=True)
+    bio = models.TextField(_('bio'), max_length=500, blank=True)
+    date_of_birth = models.DateField(_('date of birth'), null=True, blank=True)
+    is_verified = models.BooleanField(_('verified'), default=False)
+    
+    # Additional fields for user preferences
+    language = models.CharField(_('language'), max_length=10, default='en')
+    timezone = models.CharField(_('timezone'), max_length=50, default='UTC')
+    notification_preferences = models.JSONField(_('notification preferences'), default=dict)
+    privacy_settings = models.JSONField(_('privacy settings'), default=dict)
+    
+    # Fields for social features
+    followers_count = models.PositiveIntegerField(_('followers count'), default=0)
+    following_count = models.PositiveIntegerField(_('following count'), default=0)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
     
     class Meta:
-        db_table = 'users'
         verbose_name = _('user')
         verbose_name_plural = _('users')
-
-class Profile(models.Model):
-    """User Profile model containing additional user information"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    avatar = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
-    bio = models.TextField(max_length=500, blank=True)
-    birth_date = models.DateField(null=True, blank=True)
-    location = models.CharField(max_length=100, blank=True)
-    interests = models.JSONField(default=list, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'user_profiles'
-        verbose_name = _('profile')
-        verbose_name_plural = _('profiles')
-
+        ordering = ['-date_joined']
+    
     def __str__(self):
-        return f"{self.user.username}'s profile"
-
-class UserPreference(models.Model):
-    """User Preferences for notifications and privacy"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
-    email_notifications = models.BooleanField(default=True)
-    push_notifications = models.BooleanField(default=True)
-    location_sharing = models.BooleanField(default=True)
-    profile_visibility = models.CharField(
-        max_length=20,
-        choices=[
-            ('public', 'Public'),
-            ('friends', 'Friends Only'),
-            ('private', 'Private')
-        ],
-        default='public'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'user_preferences'
-        verbose_name = _('user preference')
-        verbose_name_plural = _('user preferences') 
+        return self.username
+    
+    def get_full_name(self):
+        """Return the full name of the user."""
+        full_name = f"{self.first_name} {self.last_name}".strip()
+        return full_name if full_name else self.username
+    
+    def get_short_name(self):
+        """Return the short name of the user."""
+        return self.first_name if self.first_name else self.username 

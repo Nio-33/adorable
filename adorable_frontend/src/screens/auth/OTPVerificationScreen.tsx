@@ -15,16 +15,16 @@ interface OTPInputProps {
 }
 
 const OTPInput: React.FC<OTPInputProps> = ({ length = 6, value, onChange }) => {
-  const [otp, setOtp] = useState<string[]>(new Array(length).fill(""));
+  const [otp, setOtp] = useState<string[]>(new Array(length).fill(''));
   const inputRefs = useRef<TextInput[]>([]);
 
   useEffect(() => {
-    onChange(otp.join(""));
+    onChange(otp.join(''));
   }, [otp, onChange]);
 
   const handleChange = (text: string, index: number) => {
-    if (isNaN(Number(text))) return;
-    
+    if (isNaN(Number(text))) {return;}
+
     const newOtp = [...otp];
     newOtp[index] = text;
     setOtp(newOtp);
@@ -37,7 +37,7 @@ const OTPInput: React.FC<OTPInputProps> = ({ length = 6, value, onChange }) => {
 
   const handleKeyPress = (e: any, index: number) => {
     // Focus previous input on backspace
-    if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -61,12 +61,12 @@ const OTPInput: React.FC<OTPInputProps> = ({ length = 6, value, onChange }) => {
   );
 };
 
-const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({ 
+const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
   navigation,
-  route
+  route,
 }) => {
   const { email, purpose } = route.params;
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState('');
   const [timer, setTimer] = useState(30);
   const [isResending, setIsResending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -88,31 +88,31 @@ const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
       setError(null);
       setTimer(30);
       setIsResending(true);
-      
+
       // Implement your resend OTP logic here
       // For now, we'll just simulate success
       setTimeout(() => {
         Alert.alert(
-          "Code Sent",
-          "A new verification code has been sent to your email."
+          'Code Sent',
+          'A new verification code has been sent to your email.'
         );
       }, 1000);
     } catch (err) {
-      setError("Failed to resend code. Please try again.");
+      setError('Failed to resend code. Please try again.');
       setIsResending(false);
     }
   };
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
-      setError("Please enter a valid 6-digit code");
+      setError('Please enter a valid 6-digit code');
       return;
     }
 
     try {
       setError(null);
       setIsVerifying(true);
-      
+
       // Implement your verification logic here
       // For now, we'll just simulate success
       setTimeout(() => {
@@ -122,15 +122,15 @@ const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
             routes: [{ name: 'Login' }],
           });
           Alert.alert(
-            "Success",
-            "Your account has been verified. Please log in."
+            'Success',
+            'Your account has been verified. Please log in.'
           );
         } else {
           navigation.navigate('ForgotPassword');
         }
       }, 1000);
     } catch (err) {
-      setError("Invalid verification code. Please try again.");
+      setError('Invalid verification code. Please try again.');
     } finally {
       setIsVerifying(false);
     }
@@ -140,7 +140,7 @@ const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
     <View style={styles.container}>
       {/* Header with Logo */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
@@ -171,14 +171,14 @@ const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
 
           <TouchableOpacity
             style={[
-              styles.verifyButton, 
-              (otp.length !== 6 || isVerifying) && styles.verifyButtonDisabled
+              styles.verifyButton,
+              (otp.length !== 6 || isVerifying) && styles.verifyButtonDisabled,
             ]}
             onPress={handleVerify}
             disabled={otp.length !== 6 || isVerifying}
           >
             <Text style={styles.verifyButtonText}>
-              {isVerifying ? "Verifying..." : "Verify"}
+              {isVerifying ? 'Verifying...' : 'Verify'}
             </Text>
           </TouchableOpacity>
 
@@ -187,7 +187,7 @@ const OTPVerificationScreen: React.FC<OTPVerificationScreenProps> = ({
             {isResending ? (
               <Text style={styles.timerText}>Resend code in {timer}s</Text>
             ) : (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={handleResendOTP}
                 disabled={isVerifying}
               >
@@ -328,4 +328,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OTPVerificationScreen; 
+export default OTPVerificationScreen;

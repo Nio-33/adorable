@@ -148,4 +148,4 @@ export const {
   setError,
 } = placeSlice.actions;
 
-export const placeReducer = placeSlice.reducer; 
+export const placeReducer = placeSlice.reducer;

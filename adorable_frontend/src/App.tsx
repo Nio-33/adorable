@@ -19,32 +19,32 @@ export default function App() {
       <SafeAreaProvider>
         <NavigationContainer>
           <Tab.Navigator>
-            <Tab.Screen 
-              name="Map" 
+            <Tab.Screen
+              name="Map"
               component={MapScreen}
               options={{
-                headerShown: false
+                headerShown: false,
               }}
             />
-            <Tab.Screen 
-              name="Discover" 
+            <Tab.Screen
+              name="Discover"
               component={DiscoverScreen}
               options={{
-                headerShown: false
+                headerShown: false,
               }}
             />
-            <Tab.Screen 
-              name="Chat" 
+            <Tab.Screen
+              name="Chat"
               component={ChatScreen}
               options={{
-                headerShown: false
+                headerShown: false,
               }}
             />
-            <Tab.Screen 
-              name="People" 
+            <Tab.Screen
+              name="People"
               component={PeopleScreen}
               options={{
-                headerShown: false
+                headerShown: false,
               }}
             />
           </Tab.Navigator>
@@ -52,4 +52,4 @@ export default function App() {
       </SafeAreaProvider>
     </Provider>
   );
-} 
+}

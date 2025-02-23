@@ -1,154 +1,145 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/navigation';
 import { ArrowLeft, Check } from 'lucide-react-native';
-import { SettingsStackParamList } from '../../types/navigation';
-import { Icon } from '../../components/common/Icon';
 
-type LanguageSettingsNavigationProp = NativeStackNavigationProp<SettingsStackParamList>;
+type LanguageSettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface Language {
-  code: string;
-  name: string;
-  localName: string;
-}
-
-const LANGUAGES: Language[] = [
-  { code: 'en', name: 'English', localName: 'English' },
-  { code: 'fr', name: 'French', localName: 'Français' },
-  { code: 'es', name: 'Spanish', localName: 'Español' },
-  { code: 'de', name: 'German', localName: 'Deutsch' },
-  { code: 'it', name: 'Italian', localName: 'Italiano' },
-  { code: 'pt', name: 'Portuguese', localName: 'Português' },
-  { code: 'ru', name: 'Russian', localName: 'Русский' },
-  { code: 'zh', name: 'Chinese', localName: '中文' },
-  { code: 'ja', name: 'Japanese', localName: '日本語' },
-  { code: 'ko', name: 'Korean', localName: '한국어' },
-];
-
-interface LanguageItemProps {
-  language: Language;
-  selected: boolean;
-  onSelect: () => void;
-}
-
-const LanguageItem: React.FC<LanguageItemProps> = ({
-  language,
-  selected,
-  onSelect,
-}) => (
-  <TouchableOpacity
-    style={[styles.languageItem, selected && styles.languageItemSelected]}
-    onPress={onSelect}
-  >
-    <View style={styles.languageInfo}>
-      <Text style={styles.languageName}>{language.name}</Text>
-      <Text style={styles.localName}>{language.localName}</Text>
-    </View>
-    {selected && <Icon icon={Check} size={20} color="#1e1b4b" />}
-  </TouchableOpacity>
-);
-
-export const LanguageSettingsScreen: React.FC = () => {
-  const navigation = useNavigation<LanguageSettingsNavigationProp>();
+const LanguageSettingsScreen = () => {
+  const navigation = useNavigation<LanguageSettingsScreenNavigationProp>();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
 
-  const handleLanguageSelect = (languageCode: string) => {
-    setSelectedLanguage(languageCode);
-    // Here you would typically update the app's language setting
-    // and possibly trigger a reload of the app's content
-  };
+  const languages = [
+    { code: 'en', name: 'English', native: 'English' },
+    { code: 'fr', name: 'French', native: 'Français' },
+    { code: 'es', name: 'Spanish', native: 'Español' },
+    { code: 'yo', name: 'Yoruba', native: 'Yorùbá' },
+    { code: 'ha', name: 'Hausa', native: 'Hausa' },
+    { code: 'ig', name: 'Igbo', native: 'Igbo' },
+    { code: 'ar', name: 'Arabic', native: 'العربية' },
+    { code: 'zh', name: 'Chinese', native: '中文' },
+    { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+    { code: 'pt', name: 'Portuguese', native: 'Português' },
+  ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
           style={styles.backButton}
+          onPress={() => navigation.goBack()}
         >
-          <Icon icon={ArrowLeft} size={24} color="#1a1a1a" />
+          <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
-        <Text style={styles.title}>Language Settings</Text>
+        <Text style={styles.headerTitle}>Language Settings</Text>
       </View>
 
+      {/* Content */}
       <ScrollView style={styles.content}>
-        <Text style={styles.description}>
-          Choose your preferred language for the app interface
+        <View style={styles.card}>
+          {languages.map((language) => (
+            <TouchableOpacity
+              key={language.code}
+              style={[
+                styles.languageButton,
+                selectedLanguage === language.code && styles.languageButtonSelected,
+              ]}
+              onPress={() => setSelectedLanguage(language.code)}
+            >
+              <View style={styles.languageInfo}>
+                <Text style={styles.languageName}>{language.name}</Text>
+                <Text style={styles.languageNative}>{language.native}</Text>
+              </View>
+              {selectedLanguage === language.code && (
+                <View style={styles.checkmarkContainer}>
+                  <Check color="white" size={16} />
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.disclaimer}>
+          These translations are community provided. Some content may not be available in all languages.
         </Text>
-        {LANGUAGES.map((language) => (
-          <LanguageItem
-            key={language.code}
-            language={language}
-            selected={selectedLanguage === language.code}
-            onSelect={() => handleLanguageSelect(language.code)}
-          />
-        ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#1e1b4b',
   },
   header: {
+    backgroundColor: '#312e81',
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    gap: 12,
   },
   backButton: {
-    padding: 8,
-    marginRight: 8,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  title: {
+  headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: 'white',
   },
   content: {
     flex: 1,
+    padding: 16,
   },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    margin: 16,
-    marginBottom: 24,
+  card: {
+    backgroundColor: '#312e81',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-  languageItem: {
+  languageButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#1e1b4b',
   },
-  languageItemSelected: {
-    backgroundColor: '#f3f4f6',
+  languageButtonSelected: {
+    backgroundColor: '#4338ca',
   },
   languageInfo: {
-    flex: 1,
+    gap: 4,
   },
   languageName: {
+    color: 'white',
     fontSize: 16,
     fontWeight: '500',
-    color: '#1a1a1a',
-    marginBottom: 4,
   },
-  localName: {
+  languageNative: {
+    color: '#a5b4fc',
     fontSize: 14,
-    color: '#666',
   },
-}); 
+  checkmarkContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4f46e5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disclaimer: {
+    color: '#a5b4fc',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 16,
+    marginHorizontal: 24,
+  },
+});
+
+export default LanguageSettingsScreen;

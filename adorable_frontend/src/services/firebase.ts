@@ -6,68 +6,69 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updateProfile,
+  onAuthStateChanged,
   User as FirebaseUser,
   UserCredential,
 } from 'firebase/auth';
 import {
-  getDatabase,
-  ref,
-  set,
-  get,
-  push,
-  remove,
-  onValue,
-  Database,
-  DataSnapshot,
-  update,
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
   query,
-  orderByChild,
-  limitToLast,
-  off,
-  DatabaseReference,
-} from 'firebase/database';
+  where,
+  orderBy,
+  limit,
+  Firestore,
+  serverTimestamp,
+} from 'firebase/firestore';
 import {
   getStorage,
-  ref as storageRef,
+  Storage,
+  ref,
   uploadBytes,
   getDownloadURL,
-  StorageReference,
 } from 'firebase/storage';
 import { FIREBASE_CONFIG } from '../config/constants';
-import { User, Message, ChatRoom } from '../types';
-import firebase from 'firebase/app';
-import 'firebase/database';
-import 'firebase/storage';
-
-const firebaseConfig = {
-  // Your Firebase config here
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
-};
+import { Message, ChatRoom, User } from '../types';
 
 class FirebaseService {
+  private static instance: FirebaseService;
   private app: FirebaseApp;
   private auth: Auth;
-  private database: Database;
-  private storage: ReturnType<typeof getStorage>;
+  private db: Firestore;
+  private storage: Storage;
 
-  constructor() {
-    if (!firebase.apps.length) {
-      this.app = initializeApp(FIREBASE_CONFIG);
-    } else {
-      this.app = initializeApp(FIREBASE_CONFIG);
-    }
+  private constructor() {
+    this.app = initializeApp({
+      apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    });
+
     this.auth = getAuth(this.app);
-    this.database = getDatabase(this.app);
+    this.db = getFirestore(this.app);
     this.storage = getStorage(this.app);
   }
 
-  // Authentication methods
+  public static getInstance(): FirebaseService {
+    if (!FirebaseService.instance) {
+      FirebaseService.instance = new FirebaseService();
+    }
+    return FirebaseService.instance;
+  }
+
+  // Auth methods
+  public auth() {
+    return this.auth;
+  }
+
   async signIn(email: string, password: string): Promise<UserCredential> {
     return signInWithEmailAndPassword(this.auth, email, password);
   }
@@ -81,8 +82,9 @@ class FirebaseService {
   }
 
   async updateUserProfile(displayName?: string, photoURL?: string): Promise<void> {
-    if (!this.auth.currentUser) throw new Error('No user signed in');
-    return updateProfile(this.auth.currentUser, { displayName, photoURL });
+    if (this.auth.currentUser) {
+      return updateProfile(this.auth.currentUser, { displayName, photoURL });
+    }
   }
 
   getCurrentUser(): FirebaseUser | null {
@@ -90,190 +92,115 @@ class FirebaseService {
   }
 
   onAuthStateChanged(callback: (user: FirebaseUser | null) => void): () => void {
-    return this.auth.onAuthStateChanged(callback);
+    return onAuthStateChanged(this.auth, callback);
   }
 
-  // Realtime Database methods
-  async setData(path: string, data: any): Promise<void> {
-    const dbRef = ref(this.database, path);
-    return set(dbRef, data);
+  // User methods
+  public async createUser(userData: Omit<User, 'id'>) {
+    const userRef = doc(collection(this.db, 'users'));
+    await setDoc(userRef, {
+      ...userData,
+      id: userRef.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    return userRef.id;
   }
 
-  async getData(path: string): Promise<any> {
-    const dbRef = ref(this.database, path);
-    const snapshot = await get(dbRef);
-    return snapshot.val();
+  public async getUser(userId: string): Promise<User> {
+    const userRef = doc(this.db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+    return userDoc.data() as User;
   }
 
-  async pushData(path: string, data: any): Promise<string> {
-    const dbRef = ref(this.database, path);
-    const newRef = push(dbRef);
-    await set(newRef, data);
-    return newRef.key as string;
+  public async updateUser(userId: string, updates: Partial<User>) {
+    const userRef = doc(this.db, 'users', userId);
+    await updateDoc(userRef, {
+      ...updates,
+      updatedAt: new Date(),
+    });
   }
 
-  async removeData(path: string): Promise<void> {
-    const dbRef = ref(this.database, path);
-    return remove(dbRef);
+  // Chat room methods
+  public async createChatRoom(participants: string[]) {
+    const chatRef = doc(collection(this.db, 'chatRooms'));
+    const chatRoom: ChatRoom = {
+      id: chatRef.id,
+      participants,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await setDoc(chatRef, chatRoom);
+    return chatRoom;
   }
 
-  onDataChange(path: string, callback: (snapshot: DataSnapshot) => void): () => void {
-    const dbRef = ref(this.database, path);
-    const unsubscribe = onValue(dbRef, callback);
-    return unsubscribe;
+  public async getChatRoomById(chatRoomId: string): Promise<ChatRoom> {
+    const chatRef = doc(this.db, 'chatRooms', chatRoomId);
+    const chatDoc = await getDoc(chatRef);
+    if (!chatDoc.exists()) {
+      throw new Error('Chat room not found');
+    }
+    return chatDoc.data() as ChatRoom;
   }
 
-  // User presence system
-  setupPresence(userId: string): void {
-    const userStatusRef = ref(this.database, `/status/${userId}`);
-    const connectedRef = ref(this.database, '.info/connected');
-
-    onValue(connectedRef, (snapshot) => {
-      if (snapshot.val() === true) {
-        // User is online
-        set(userStatusRef, {
-          state: 'online',
-          lastSeen: new Date().toISOString(),
-        });
-
-        // When user disconnects, update the status
-        set(userStatusRef, {
-          state: 'offline',
-          lastSeen: new Date().toISOString(),
-        }).catch(console.error);
+  public subscribeToChatRoom(chatRoomId: string, callback: (chatRoom: ChatRoom) => void) {
+    const chatRef = doc(this.db, 'chatRooms', chatRoomId);
+    return onSnapshot(chatRef, (doc) => {
+      if (doc.exists()) {
+        callback(doc.data() as ChatRoom);
       }
     });
   }
 
-  // Chat system
-  async sendMessage(chatId: string, message: any): Promise<string> {
-    return this.pushData(`/chats/${chatId}/messages`, {
-      ...message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  onNewMessage(chatId: string, callback: (snapshot: DataSnapshot) => void): () => void {
-    return this.onDataChange(`/chats/${chatId}/messages`, callback);
-  }
-
-  // User location updates
-  async updateUserLocation(userId: string, location: { latitude: number; longitude: number }): Promise<void> {
-    return this.setData(`/locations/${userId}`, {
-      ...location,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  onUserLocationChanged(userId: string, callback: (snapshot: DataSnapshot) => void): () => void {
-    return this.onDataChange(`/locations/${userId}`, callback);
-  }
-
-  // Database references
-  public getChatRoomsRef(userId: string): DatabaseReference {
-    return ref(this.database, `/chatRooms/${userId}`);
-  }
-
-  public getMessagesRef(roomId: string): DatabaseReference {
-    return ref(this.database, `/messages/${roomId}`);
-  }
-
-  public getChatRoomRef(roomId: string): DatabaseReference {
-    return ref(this.database, `/chatRooms/${roomId}`);
-  }
-
-  // Storage references
-  public getStorageRef(path: string): StorageReference {
-    return storageRef(this.storage, path);
-  }
-
-  // Chat room operations
-  public async createChatRoom(room: Omit<ChatRoom, 'id'>) {
-    const chatRoomsRef = ref(this.database, '/chatRooms');
-    const newRoomRef = push(chatRoomsRef);
-    const roomWithId = { ...room, id: newRoomRef.key! };
-    await set(newRoomRef, roomWithId);
-    return roomWithId;
-  }
-
-  public async updateChatRoom(roomId: string, updates: Partial<ChatRoom>) {
-    const roomRef = ref(this.database, `/chatRooms/${roomId}`);
-    await update(roomRef, updates);
-  }
-
-  // Message operations
-  public async sendMessage(roomId: string, message: Omit<Message, 'id'>): Promise<Message> {
-    const messagesRef = ref(this.database, `/messages/${roomId}`);
-    const newMessageRef = push(messagesRef);
-    const messageWithId: Message = {
-      ...message,
-      id: newMessageRef.key!,
-      timestamp: message.timestamp,
-    };
-    await set(newMessageRef, messageWithId);
-    return messageWithId;
-  }
-
-  public async markMessagesAsRead(roomId: string, messageIds: string[]) {
-    const updates: Record<string, boolean> = {};
-    messageIds.forEach(messageId => {
-      updates[`/messages/${roomId}/${messageId}/read`] = true;
-    });
-    const dbRef = ref(this.database);
-    await update(dbRef, updates);
-  }
-
-  // Storage operations
-  public async uploadFile(path: string, file: Blob) {
-    const fileRef = this.getStorageRef(path);
-    await uploadBytes(fileRef, file);
-    return getDownloadURL(fileRef);
-  }
-
-  // Real-time subscriptions
-  public subscribeToMessages(roomId: string, callback: (messages: Message[]) => void) {
-    const messagesRef = this.getMessagesRef(roomId);
-    const messagesQuery = query(
-      messagesRef,
-      orderByChild('timestamp'),
-      limitToLast(20)
+  public subscribeToChatRooms(userId: string, callback: (chatRooms: ChatRoom[]) => void) {
+    const chatsQuery = query(
+      collection(this.db, 'chatRooms'),
+      where('participants', 'array-contains', userId)
     );
-    
-    onValue(messagesQuery, (snapshot) => {
-      const messages = Object.values(snapshot.val() || {}).map((message: any) => ({
-        ...message,
-        timestamp: new Date(message.timestamp),
-      })) as Message[];
+    return onSnapshot(chatsQuery, (snapshot) => {
+      const chatRooms = snapshot.docs.map(doc => doc.data() as ChatRoom);
+      callback(chatRooms);
+    });
+  }
+
+  // Message methods
+  public async sendMessage(chatRoomId: string, message: Omit<Message, 'id'>) {
+    const messageRef = doc(collection(this.db, 'chatRooms', chatRoomId, 'messages'));
+    const fullMessage: Message = {
+      ...message,
+      id: messageRef.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await setDoc(messageRef, fullMessage);
+    return fullMessage;
+  }
+
+  public subscribeToMessages(chatRoomId: string, callback: (messages: Message[]) => void) {
+    const messagesQuery = query(
+      collection(this.db, 'chatRooms', chatRoomId, 'messages'),
+      orderBy('createdAt', 'asc')
+    );
+    return onSnapshot(messagesQuery, (snapshot) => {
+      const messages = snapshot.docs.map(doc => doc.data() as Message);
       callback(messages);
     });
-
-    return () => off(messagesRef);
   }
 
-  public subscribeToChatRooms(userId: string, callback: (rooms: ChatRoom[]) => void) {
-    const roomsRef = this.getChatRoomsRef(userId);
-    
-    onValue(roomsRef, (snapshot) => {
-      const rooms = Object.values(snapshot.val() || {}).map((room: any) => ({
-        ...room,
-        updatedAt: new Date(room.updatedAt),
-        lastMessage: room.lastMessage ? {
-          ...room.lastMessage,
-          timestamp: new Date(room.lastMessage.timestamp),
-        } : undefined,
-      })) as ChatRoom[];
-      callback(rooms);
-    });
-
-    return () => off(roomsRef);
+  // File upload methods
+  public async uploadFile(path: string, file: Blob) {
+    const storageRef = ref(this.storage, path);
+    const snapshot = await uploadBytes(storageRef, file);
+    return getDownloadURL(snapshot.ref);
   }
 
   // Cleanup
-  public cleanup() {
-    if (this.app) {
-      this.app.delete();
-    }
+  public cleanup(): void {
+    // Implement any cleanup needed
   }
 }
 
-export const firebaseService = new FirebaseService(); 
+export const firebaseService = FirebaseService.getInstance();

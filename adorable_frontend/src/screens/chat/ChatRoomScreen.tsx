@@ -50,7 +50,7 @@ export const ChatRoomScreen: React.FC = () => {
   const { roomId } = route.params;
 
   const loadMessages = async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       setError(null);
       const fetchedMessages = await chatService.getMessages(roomId);
@@ -65,7 +65,7 @@ export const ChatRoomScreen: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!user || !inputText.trim()) return;
+    if (!user || !inputText.trim()) {return;}
     try {
       setSending(true);
       const sender: ChatUser = {
@@ -83,7 +83,7 @@ export const ChatRoomScreen: React.FC = () => {
   };
 
   const handleShareLocation = async () => {
-    if (!user || !location) return;
+    if (!user || !location) {return;}
     try {
       setSending(true);
       const sender: ChatUser = {
@@ -108,7 +108,7 @@ export const ChatRoomScreen: React.FC = () => {
       setSending(true);
       setShowMediaOptions(false);
       const response = await mediaPickerService.pickFromGallery({ mediaType: 'photo' });
-      
+
       if (response.assets && response.assets[0]?.uri && user) {
         const sender: ChatUser = {
           id: user.uid,
@@ -129,7 +129,7 @@ export const ChatRoomScreen: React.FC = () => {
       setSending(true);
       setShowMediaOptions(false);
       const response = await mediaPickerService.takePhoto();
-      
+
       if (response.assets && response.assets[0]?.uri && user) {
         const sender: ChatUser = {
           id: user.uid,
@@ -150,7 +150,7 @@ export const ChatRoomScreen: React.FC = () => {
       setSending(true);
       setShowMediaOptions(false);
       const response = await mediaPickerService.pickFromGallery({ mediaType: 'video' });
-      
+
       if (response.assets && response.assets[0]?.uri && user) {
         const sender: ChatUser = {
           id: user.uid,
@@ -168,17 +168,15 @@ export const ChatRoomScreen: React.FC = () => {
 
   const handleRecordVideo = async () => {
     try {
-      setSending(true);
-      setShowMediaOptions(false);
-      const response = await mediaPickerService.recordVideo();
-      
-      if (response.assets && response.assets[0]?.uri && user) {
+      const result = await mediaPickerService.takeVideo();
+
+      if (result.assets && result.assets[0]?.uri && user) {
         const sender: ChatUser = {
           id: user.uid,
           displayName: user.displayName || 'Anonymous',
           photoURL: user.photoURL || undefined,
         };
-        await chatService.sendMediaMessage(roomId, sender, response.assets[0].uri, 'video');
+        await chatService.sendMediaMessage(roomId, sender, result.assets[0].uri, 'video');
       }
     } catch (err) {
       console.error('Error recording video:', err);
@@ -189,19 +187,10 @@ export const ChatRoomScreen: React.FC = () => {
 
   useEffect(() => {
     loadMessages();
-
-    const unsubscribe = chatService.subscribeToMessages(roomId, (newMessage) => {
-      setMessages((prev) => [...prev, newMessage].sort((a, b) => a.timestamp - b.timestamp));
-      if (newMessage.senderId !== user?.uid) {
-        chatService.markMessagesAsRead(roomId, user?.uid || '');
-      }
-    });
-
-    return () => unsubscribe();
-  }, [roomId, user]);
+  }, [loadMessages]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {return;}
 
     const unsubscribe = chatService.subscribeToTypingStatus(roomId, (users) => {
       setTypingUsers(users.filter(id => id !== user.uid));
@@ -216,18 +205,18 @@ export const ChatRoomScreen: React.FC = () => {
   };
 
   const handleInputFocus = () => {
-    if (!user) return;
+    if (!user) {return;}
     chatService.updateTypingStatus(roomId, user.uid, true);
   };
 
   const handleInputBlur = () => {
-    if (!user) return;
+    if (!user) {return;}
     chatService.updateTypingStatus(roomId, user.uid, false);
   };
 
   const handleInputChange = (text: string) => {
     setInputText(text);
-    if (!user) return;
+    if (!user) {return;}
 
     // Clear existing timeout
     if (typingTimeoutRef.current) {
@@ -244,7 +233,7 @@ export const ChatRoomScreen: React.FC = () => {
   };
 
   const renderTypingIndicator = () => {
-    if (typingUsers.length === 0) return null;
+    if (typingUsers.length === 0) {return null;}
 
     return (
       <View style={styles.typingContainer}>
@@ -550,4 +539,4 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
   },
-}); 
+});

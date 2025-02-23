@@ -59,4 +59,4 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background.primary,
     paddingHorizontal: SPACING.md,
   },
-}); 
+});

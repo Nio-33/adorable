@@ -56,10 +56,10 @@ export class DiscoverService {
         .orderByChild('visitCount')
         .limitToLast(limit)
         .once('value');
-      
+
       const popularPlaces = [];
       const places = snapshot.val() || {};
-      
+
       for (const [placeId, popularity] of Object.entries(places)) {
         try {
           const placeDetails = await mapService.getPlaceDetails(placeId, 'google');
@@ -219,4 +219,4 @@ export class DiscoverService {
   }
 }
 
-export const discoverService = DiscoverService.getInstance(); 
+export const discoverService = DiscoverService.getInstance();

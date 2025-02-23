@@ -1,69 +1,34 @@
-import { Dimensions } from 'react-native';
-
-const { width, height } = Dimensions.get('window');
-
 export const COLORS = {
-  // Primary colors
-  primary: '#000080', // Navy Blue
-  secondary: '#4B0082', // Indigo
-  accent: '#1E90FF', // Dodger Blue
-
-  // Background colors
+  primary: {
+    light: '#6200EE',
+    main: '#3700B3',
+    dark: '#23036A',
+  },
+  secondary: {
+    light: '#03DAC6',
+    main: '#018786',
+    dark: '#005457',
+  },
   background: {
     primary: '#FFFFFF',
     secondary: '#F5F5F5',
-    tertiary: '#E5E5E5',
   },
-
-  // Text colors
   text: {
-    primary: '#333333',
+    primary: '#000000',
     secondary: '#666666',
-    tertiary: '#999999',
+    disabled: '#999999',
     inverse: '#FFFFFF',
   },
-
-  // Status colors
-  status: {
-    success: '#4CAF50',
-    warning: '#FFC107',
-    error: '#F44336',
-    info: '#2196F3',
-  },
-
-  // Border colors
   border: {
     light: '#E0E0E0',
-    medium: '#BDBDBD',
-    dark: '#9E9E9E',
+    dark: '#BDBDBD',
   },
-} as const;
-
-export const TYPOGRAPHY = {
-  fontFamily: {
-    regular: 'System',
-    medium: 'System',
-    bold: 'System',
-  },
-  fontSize: {
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
-    xxl: 24,
-    xxxl: 32,
-  },
-  lineHeight: {
-    xs: 16,
-    sm: 20,
-    md: 24,
-    lg: 28,
-    xl: 32,
-    xxl: 36,
-    xxxl: 40,
-  },
-} as const;
+  success: '#4CAF50',
+  error: '#F44336',
+  warning: '#FF9800',
+  info: '#2196F3',
+  disabled: '#BDBDBD',
+};
 
 export const SPACING = {
   xs: 4,
@@ -72,14 +37,49 @@ export const SPACING = {
   lg: 24,
   xl: 32,
   xxl: 48,
-} as const;
+};
 
-export const LAYOUT = {
-  window: {
-    width,
-    height,
+export const TYPOGRAPHY = {
+  h1: {
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 32,
   },
-  isSmallDevice: width < 375,
+  h2: {
+    fontSize: 20,
+    fontWeight: '600',
+    lineHeight: 28,
+  },
+  h3: {
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 26,
+  },
+  h4: {
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  body1: {
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 24,
+  },
+  body2: {
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 20,
+  },
+  caption: {
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16,
+  },
+  button: {
+    fontSize: 16,
+    fontWeight: '500',
+    lineHeight: 24,
+  },
 } as const;
 
 export const SHADOWS = {
@@ -87,39 +87,38 @@ export const SHADOWS = {
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
     elevation: 2,
   },
   medium: {
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.30,
-    shadowRadius: 4.65,
-    elevation: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   large: {
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 4,
     },
-    shadowOpacity: 0.37,
-    shadowRadius: 7.49,
-    elevation: 6,
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
   },
 } as const;
 
 export const BORDER_RADIUS = {
-  xs: 4,
-  sm: 8,
-  md: 12,
+  sm: 4,
+  md: 8,
   lg: 16,
   xl: 24,
   round: 9999,
-} as const; 
+} as const;

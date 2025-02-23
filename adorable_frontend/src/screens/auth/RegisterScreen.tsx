@@ -34,9 +34,9 @@ const AdorableLogo = () => (
     <Circle cx="70" cy="85" r="8" fill="white" />
     <Circle cx="130" cy="85" r="8" fill="white" />
     <Path d="M70 130 Q100 160 130 130" stroke="white" strokeWidth="8" fill="none" />
-    <Path d="M100 40 C60 40, 40 70, 40 100 C40 140, 100 160, 100 180 C100 160, 160 140, 160 100 C160 70, 140 40, 100 40" 
-          fill="none" 
-          stroke="white" 
+    <Path d="M100 40 C60 40, 40 70, 40 100 C40 140, 100 160, 100 180 C100 160, 160 140, 160 100 C160 70, 140 40, 100 40"
+          fill="none"
+          stroke="white"
           strokeWidth="8"/>
   </Svg>
 );
@@ -134,15 +134,15 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
   };
 
   const handleVerificationDigitChange = (index: number, value: string) => {
-    if (value.length > 1) return; // Only allow single digits
-    
+    if (value.length > 1) {return;} // Only allow single digits
+
     const newDigits = [...verificationDigits];
     newDigits[index] = value;
     setVerificationDigits(newDigits);
-    
+
     // Combine digits for the verification code
     setVerificationCode(newDigits.join(''));
-    
+
     // Auto-focus next input or previous if deleting
     if (value !== '') {
       if (index < 5) {
@@ -206,12 +206,12 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     try {
       setLoading(true);
       const result = await promptAsync();
-      
+
       if (result.type === 'success' && result.authentication?.idToken) {
         const credential = auth.GoogleAuthProvider.credential(result.authentication.idToken);
         const userCredential = await auth().signInWithCredential(credential);
         const firebaseUser = userCredential.user;
-        
+
         setUser({
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
@@ -219,7 +219,7 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           photoURL: firebaseUser.photoURL,
           hasCompletedSetup: false,
         });
-        
+
         navigation.navigate('Login');
       }
     } catch (error) {
@@ -234,12 +234,12 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
     try {
       setLoading(true);
       const result = await fbPromptAsync();
-      
+
       if (result.type === 'success' && result.authentication?.accessToken) {
         const credential = auth.FacebookAuthProvider.credential(result.authentication.accessToken);
         const userCredential = await auth().signInWithCredential(credential);
         const firebaseUser = userCredential.user;
-        
+
         setUser({
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
@@ -247,7 +247,7 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
           photoURL: firebaseUser.photoURL,
           hasCompletedSetup: false,
         });
-        
+
         navigation.navigate('Login');
       }
     } catch (error) {
@@ -268,7 +268,7 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
@@ -333,7 +333,7 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                   <TouchableOpacity
                     style={[
                       styles.verifyButton,
-                      (isVerifying || isPhoneVerified) && styles.verifyButtonDisabled
+                      (isVerifying || isPhoneVerified) && styles.verifyButtonDisabled,
                     ]}
                     onPress={handleSendVerificationCode}
                     disabled={isVerifying || isPhoneVerified}
@@ -356,7 +356,7 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                       <Text style={styles.checkmark}>✓</Text>
                     </View>
                   </View>
-                  
+
                   <Text style={styles.verificationTitle}>Verification Code</Text>
                   <Text style={styles.verificationSubtitle}>
                     We've sent a verification code to{'\n'}
@@ -389,7 +389,7 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
                     )}
                   </TouchableOpacity>
 
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.resendButton}
                     onPress={handleSendVerificationCode}
                     disabled={isVerifying}
@@ -472,15 +472,15 @@ const RegisterScreen: React.FC<AuthScreenProps> = ({ navigation }) => {
               </View>
 
               <View style={styles.socialButtonsContainer}>
-                <TouchableOpacity 
-                  style={styles.socialButton} 
+                <TouchableOpacity
+                  style={styles.socialButton}
                   onPress={handleGoogleSignUp}
                 >
                   <Text style={styles.socialButtonText}>Google</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={styles.socialButton} 
+                <TouchableOpacity
+                  style={styles.socialButton}
                   onPress={handleFacebookSignUp}
                 >
                   <Text style={styles.socialButtonText}>Facebook</Text>
@@ -772,4 +772,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterScreen; 
+export default RegisterScreen;

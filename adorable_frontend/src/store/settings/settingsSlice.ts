@@ -112,4 +112,4 @@ export const {
   setError,
 } = settingsSlice.actions;
 
-export const settingsReducer = settingsSlice.reducer; 
+export const settingsReducer = settingsSlice.reducer;

@@ -139,4 +139,4 @@ class MediaPickerService {
   }
 }
 
-export const mediaPickerService = MediaPickerService.getInstance(); 
+export const mediaPickerService = MediaPickerService.getInstance();

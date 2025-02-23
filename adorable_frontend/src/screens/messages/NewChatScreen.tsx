@@ -105,4 +105,4 @@ const styles = StyleSheet.create({
   searchBar: {
     margin: SPACING.md,
   },
-}); 
+});

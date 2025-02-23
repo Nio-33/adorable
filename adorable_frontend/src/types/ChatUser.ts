@@ -11,4 +11,4 @@ export interface ChatUser {
     latitude: number;
     longitude: number;
   };
-} 
+}

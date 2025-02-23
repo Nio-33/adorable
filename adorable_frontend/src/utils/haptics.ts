@@ -112,4 +112,4 @@ export function useHapticFeedback() {
     heavy: useCallback(() => haptics.heavy(), []),
     selection: useCallback(() => haptics.selection(), []),
   };
-} 
+}

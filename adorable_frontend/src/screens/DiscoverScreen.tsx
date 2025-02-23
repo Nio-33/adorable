@@ -21,4 +21,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DiscoverScreen; 
+export default DiscoverScreen;

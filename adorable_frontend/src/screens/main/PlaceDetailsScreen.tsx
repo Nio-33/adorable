@@ -47,7 +47,7 @@ const PlaceDetailsScreen: React.FC = () => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  
+
   const navigation = useNavigation<PlaceDetailsScreenNavigationProp>();
   const route = useRoute<PlaceDetailsScreenRouteProp>();
   const { user } = useAuth();
@@ -74,7 +74,7 @@ const PlaceDetailsScreen: React.FC = () => {
   };
 
   const loadUserInteractions = async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       // Check if place is saved
       const savedPlaces = await placeInteractionService.getSavedPlaces(user.uid);
@@ -94,7 +94,7 @@ const PlaceDetailsScreen: React.FC = () => {
         Alert.alert('Error', 'Please sign in to save places');
         return;
       }
-      if (!place) return;
+      if (!place) {return;}
 
       await placeInteractionService.savePlace(user.uid, place);
       setIsSaved(true);
@@ -106,7 +106,7 @@ const PlaceDetailsScreen: React.FC = () => {
 
   const handleSharePlace = async () => {
     try {
-      if (!place) return;
+      if (!place) {return;}
       await Share.share({
         message: `Check out ${place.name} on Adorable!\nAddress: ${place.address}`,
         url: `adorable://place/${place.placeId}`, // Deep link URL
@@ -122,7 +122,7 @@ const PlaceDetailsScreen: React.FC = () => {
         Alert.alert('Error', 'Please sign in to check in');
         return;
       }
-      if (!place) return;
+      if (!place) {return;}
 
       await placeInteractionService.checkIn(user.uid, place.placeId);
       setIsCheckedIn(true);
@@ -197,7 +197,7 @@ const PlaceDetailsScreen: React.FC = () => {
   };
 
   const handleGetDirections = () => {
-    if (!place) return;
+    if (!place) {return;}
 
     const scheme = Platform.select({ ios: 'maps:', android: 'geo:' });
     const latLng = `${place.location.latitude},${place.location.longitude}`;
@@ -213,12 +213,12 @@ const PlaceDetailsScreen: React.FC = () => {
   };
 
   const handleCall = () => {
-    if (!place?.phoneNumber) return;
+    if (!place?.phoneNumber) {return;}
     Linking.openURL(`tel:${place.phoneNumber}`);
   };
 
   const handleVisitWebsite = () => {
-    if (!place?.website) return;
+    if (!place?.website) {return;}
     Linking.openURL(place.website);
   };
 
@@ -519,4 +519,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PlaceDetailsScreen; 
+export default PlaceDetailsScreen;

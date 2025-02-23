@@ -25,13 +25,13 @@ export const transformData = <T extends Record<string, any>>(data: T): Recursive
   }
 
   if (Array.isArray(data)) {
-    return data.map((item) => 
+    return data.map((item) =>
       item && typeof item === 'object' ? transformData(item as Record<string, any>) : item
     ) as RecursiveNullToUndefined<T>;
   }
 
   const transformed = { ...data } as { [K in keyof T]: any };
-  
+
   for (const key in transformed) {
     const value = transformed[key];
     if (value === null) {
@@ -40,6 +40,6 @@ export const transformData = <T extends Record<string, any>>(data: T): Recursive
       transformed[key] = transformData(value as Record<string, any>);
     }
   }
-  
+
   return transformed as RecursiveNullToUndefined<T>;
-}; 
+};

@@ -87,4 +87,4 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
     textAlign: 'center',
   },
-}); 
+});

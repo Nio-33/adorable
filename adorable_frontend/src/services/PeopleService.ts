@@ -134,7 +134,7 @@ class PeopleService {
     for (const doc of snapshot.docs) {
       const data = doc.data() as DocumentData;
       const fromUserDoc = await getDoc(data.fromUser);
-      
+
       if (fromUserDoc.exists()) {
         const fromUserData = fromUserDoc.data() as DocumentData;
         requests.push({
@@ -219,7 +219,7 @@ class PeopleService {
 
   async getFriends(userId: string): Promise<ChatUser[]> {
     const relationships = await this.getUserRelationships(userId, 'friends');
-    const friendIds = relationships.map(rel => 
+    const friendIds = relationships.map(rel =>
       rel.userId1 === userId ? rel.userId2 : rel.userId1
     );
 
@@ -298,7 +298,7 @@ class PeopleService {
     );
 
     const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
+    if (snapshot.empty) {return null;}
 
     const doc = snapshot.docs[0];
     return {
@@ -346,7 +346,7 @@ class PeopleService {
     ]);
 
     const relationships: UserRelationship[] = [];
-    
+
     for (const doc of [...snapshot1.docs, ...snapshot2.docs]) {
       relationships.push({
         id: doc.id,
@@ -380,7 +380,7 @@ class PeopleService {
   async getBlockedUsers(userId: string): Promise<ChatUser[]> {
     try {
       const relationships = await this.getUserRelationships(userId, 'blocked');
-      const blockedUserIds = relationships.map(rel => 
+      const blockedUserIds = relationships.map(rel =>
         rel.userId1 === userId ? rel.userId2 : rel.userId1
       );
 
@@ -409,4 +409,4 @@ class PeopleService {
   }
 }
 
-export const peopleService = new PeopleService(); 
+export const peopleService = new PeopleService();

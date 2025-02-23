@@ -13,7 +13,7 @@ export class GoogleMapsProvider implements MapProvider {
         )}&location=${location.latitude},${location.longitude}&radius=5000&key=${ENV.MAPS.GOOGLE_MAPS_API_KEY}`
       );
       const data = await response.json();
-      
+
       if (!data.results) {
         throw new Error('No results found');
       }
@@ -47,7 +47,7 @@ export class GoogleMapsProvider implements MapProvider {
         `${GoogleMapsProvider.PLACES_API_BASE_URL}/details/json?place_id=${placeId}&fields=name,formatted_address,geometry,rating,reviews,photos,opening_hours,formatted_phone_number,website,price_level,types&key=${ENV.MAPS.GOOGLE_MAPS_API_KEY}`
       );
       const data = await response.json();
-      
+
       if (!data.result) {
         throw new Error('Place details not found');
       }
@@ -163,4 +163,4 @@ export class GoogleMapsProvider implements MapProvider {
       throw error;
     }
   }
-} 
+}

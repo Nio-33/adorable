@@ -1,71 +1,35 @@
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from .models import Place, PlacePhoto, PlaceReview, UserLocation, SavedPlace
-from .serializers import (
-    PlaceSerializer, PlacePhotoSerializer, PlaceReviewSerializer,
-    UserLocationSerializer, SavedPlaceSerializer
-)
+from django_filters import rest_framework as filters
+from .models import Location
+from .serializers import LocationSerializer
 
-class PlaceViewSet(viewsets.ModelViewSet):
-    """ViewSet for viewing and editing places"""
-    queryset = Place.objects.all()
-    serializer_class = PlaceSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['category']
-    search_fields = ['name', 'description', 'address']
+class LocationFilter(filters.FilterSet):
+    class Meta:
+        model = Location
+        fields = {
+            'type': ['exact'],
+            'is_primary': ['exact'],
+            'name': ['icontains'],
+            'address': ['icontains'],
+        }
 
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
-
-    @action(detail=True, methods=['post'])
-    def save_place(self, request, pk=None):
-        """Save a place for the current user"""
-        place = self.get_object()
-        saved_place, created = SavedPlace.objects.get_or_create(
-            user=request.user,
-            place=place
-        )
-        return Response({'status': 'place saved'})
-
-class PlacePhotoViewSet(viewsets.ModelViewSet):
-    """ViewSet for place photos"""
-    queryset = PlacePhoto.objects.all()
-    serializer_class = PlacePhotoSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_create(self, serializer):
-        serializer.save(uploaded_by=self.request.user)
-
-class PlaceReviewViewSet(viewsets.ModelViewSet):
-    """ViewSet for place reviews"""
-    queryset = PlaceReview.objects.all()
-    serializer_class = PlaceReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-class UserLocationViewSet(viewsets.ModelViewSet):
-    """ViewSet for user locations"""
-    serializer_class = UserLocationSerializer
+class LocationViewSet(viewsets.ModelViewSet):
+    serializer_class = LocationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filterset_class = LocationFilter
+    search_fields = ['name', 'address']
+    ordering_fields = ['name', 'created_at', 'type']
+    ordering = ['-is_primary', '-created_at']
 
     def get_queryset(self):
-        return UserLocation.objects.filter(user=self.request.user)
+        return Location.objects.filter(user=self.request.user)
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-class SavedPlaceViewSet(viewsets.ModelViewSet):
-    """ViewSet for saved places"""
-    serializer_class = SavedPlaceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return SavedPlace.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user) 
+    @action(detail=False, methods=['get'])
+    def primary(self, request):
+        location = self.get_queryset().filter(is_primary=True).first()
+        if location:
+            serializer = self.get_serializer(location)
+            return Response(serializer.data)
+        return Response({'detail': 'No primary location set'}, status=404) 

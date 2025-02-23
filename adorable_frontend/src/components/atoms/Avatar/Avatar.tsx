@@ -1,29 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Image,
   StyleSheet,
   ViewStyle,
-  StyleProp,
-  ImageSourcePropType,
+  ImageStyle,
   TextStyle,
 } from 'react-native';
-import { COLORS, TYPOGRAPHY, BORDER_RADIUS } from '../../../config/theme';
-import { Typography } from '../Typography';
-import { BaseComponentProps } from '../../common/types';
+import { COLORS, TYPOGRAPHY } from '../../../config/theme';
+import { Typography } from '../Typography/Typography';
 
-export type AvatarSize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge';
-export type AvatarShape = 'circle' | 'square';
+type AvatarSize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge' | number;
 
-export interface AvatarProps extends BaseComponentProps {
-  source?: ImageSourcePropType;
-  name?: string;
-  size?: AvatarSize;
-  shape?: AvatarShape;
-  backgroundColor?: string;
-}
-
-const AVATAR_SIZES: Record<AvatarSize, number> = {
+const AVATAR_SIZES: Record<string, number> = {
   tiny: 24,
   small: 32,
   medium: 40,
@@ -31,89 +20,110 @@ const AVATAR_SIZES: Record<AvatarSize, number> = {
   xlarge: 56,
 };
 
+interface AvatarProps {
+  size?: AvatarSize;
+  uri?: string;
+  fallback?: string;
+  style?: ViewStyle;
+  imageStyle?: ImageStyle;
+  textStyle?: TextStyle;
+  onPress?: () => void;
+}
+
 export const Avatar: React.FC<AvatarProps> = ({
-  source,
-  name,
   size = 'medium',
-  shape = 'circle',
-  backgroundColor = COLORS.primary,
+  uri,
+  fallback,
   style,
-  testID,
+  imageStyle,
+  textStyle,
+  onPress,
 }) => {
-  const [imageError, setImageError] = useState(false);
+  const getSize = (size: AvatarSize): number => {
+    if (typeof size === 'number') {return size;}
+    return AVATAR_SIZES[size] || AVATAR_SIZES.medium;
+  };
 
-  const containerSize = AVATAR_SIZES[size];
-  const fontSize = containerSize * 0.4;
-  const initials = name
-    ? name
-        .split(' ')
-        .map(part => part[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : '';
-
-  const containerStyle: StyleProp<ViewStyle> = [
-    styles.container,
-    {
-      width: containerSize,
-      height: containerSize,
-      borderRadius: shape === 'circle' ? containerSize / 2 : BORDER_RADIUS.md,
-      backgroundColor: !source || imageError ? backgroundColor : undefined,
-    },
-    style,
-  ];
-
-  const textStyle: StyleProp<TextStyle> = {
-    fontSize,
+  const actualSize = getSize(size);
+  const containerStyle: ViewStyle = {
+    width: actualSize,
+    height: actualSize,
+    borderRadius: actualSize / 2,
   };
 
   const renderContent = () => {
-    if (source && !imageError) {
+    if (uri) {
       return (
         <Image
-          source={source}
-          style={[
-            styles.image,
-            {
-              borderRadius: shape === 'circle' ? containerSize / 2 : BORDER_RADIUS.md,
-            },
-          ]}
-          onError={() => setImageError(true)}
+          source={{ uri }}
+          style={[styles.image, {
+            width: actualSize,
+            height: actualSize,
+            borderRadius: actualSize / 2,
+          } as ImageStyle, imageStyle]}
+          resizeMode="cover"
         />
       );
     }
 
-    if (name) {
+    if (fallback) {
       return (
-        <Typography
-          variant="body2"
-          color={COLORS.text.inverse}
-          textStyle={textStyle}
-        >
-          {initials}
-        </Typography>
+        <View style={[styles.fallback, containerStyle, style]}>
+          <Typography
+            variant="body1"
+            color={COLORS.text.inverse}
+            style={[
+              styles.fallbackText,
+              { fontSize: actualSize * 0.4 },
+              textStyle,
+            ] as TextStyle}
+          >
+            {fallback.toUpperCase()}
+          </Typography>
+        </View>
       );
     }
 
-    return null;
+    return (
+      <View style={[styles.placeholder, containerStyle, style]}>
+        <Typography
+          variant="body1"
+          color={COLORS.text.disabled}
+          style={[
+            styles.fallbackText,
+            { fontSize: actualSize * 0.4 },
+            textStyle,
+          ] as TextStyle}
+        >
+          ?
+        </Typography>
+      </View>
+    );
   };
 
   return (
-    <View style={containerStyle} testID={testID}>
+    <View style={[containerStyle, style]} onTouchEnd={onPress}>
       {renderContent()}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
   image: {
     width: '100%',
     height: '100%',
   },
-}); 
+  fallback: {
+    backgroundColor: COLORS.primary.main,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholder: {
+    backgroundColor: COLORS.background.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fallbackText: {
+    fontWeight: '600',
+  },
+});

@@ -1,96 +1,81 @@
-import axios from 'axios';
-import type { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { API_CONFIG, STORAGE_KEYS } from '../config/constants';
-import { storage } from '../utils/helpers';
-import { ApiResponse, ApiError } from '../types';
+import axios, { AxiosInstance, AxiosError } from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ENV } from '../config/env';
 
-class ApiService {
-  private api: AxiosInstance;
+export const api: AxiosInstance = axios.create({
+  baseURL: ENV.API.URL,
+  timeout: ENV.API.TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  constructor() {
-    this.api = axios.create({
-      baseURL: API_CONFIG.BASE_URL,
-      timeout: API_CONFIG.TIMEOUT,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    this.setupInterceptors();
-  }
-
-  private setupInterceptors(): void {
-    // Request interceptor
-    this.api.interceptors.request.use(
-      async (config: InternalAxiosRequestConfig) => {
-        const token = await storage.getItem<string>(STORAGE_KEYS.AUTH_TOKEN);
-        if (token) {
-          config.headers = config.headers || {};
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error: AxiosError) => {
-        return Promise.reject(error);
-      }
-    );
-
-    // Response interceptor
-    this.api.interceptors.response.use(
-      (response: AxiosResponse) => {
-        return response.data;
-      },
-      (error: AxiosError) => {
-        return this.handleError(error);
-      }
-    );
-  }
-
-  private handleError(error: AxiosError): Promise<ApiError> {
-    if (error.response) {
-      // Server responded with error
-      const errorData = error.response.data as ApiError;
-      return Promise.reject(errorData);
-    } else if (error.request) {
-      // Request made but no response
-      return Promise.reject({
-        code: 'NETWORK_ERROR',
-        message: 'Network error occurred',
-      });
-    } else {
-      // Something else happened
-      return Promise.reject({
-        code: 'REQUEST_ERROR',
-        message: error.message || 'Unknown error occurred',
-      });
+// Request interceptor for API calls
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
+);
 
-  // Generic request methods
-  async get<T>(url: string, params?: object): Promise<ApiResponse<T>> {
-    return this.api.get<ApiResponse<T>>(url, { params }).then(response => response.data);
+// Response interceptor for API calls
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config;
+    
+    if (error.response?.status === 401 && originalRequest) {
+      // Handle token refresh here
+      const refreshToken = await AsyncStorage.getItem('refresh_token');
+      if (refreshToken) {
+        try {
+          const response = await axios.post(`${ENV.API.URL}/auth/refresh/`, {
+            refresh: refreshToken,
+          });
+          
+          const { access } = response.data;
+          await AsyncStorage.setItem('auth_token', access);
+          
+          originalRequest.headers.Authorization = `Bearer ${access}`;
+          return axios(originalRequest);
+        } catch (refreshError) {
+          // Handle refresh token failure (e.g., logout user)
+          await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
+          // Redirect to login or dispatch logout action
+        }
+      }
+    }
+    
+    return Promise.reject(error);
   }
+);
 
-  async post<T>(url: string, data?: object): Promise<ApiResponse<T>> {
-    return this.api.post<ApiResponse<T>>(url, data).then(response => response.data);
-  }
-
-  async put<T>(url: string, data?: object): Promise<ApiResponse<T>> {
-    return this.api.put<ApiResponse<T>>(url, data).then(response => response.data);
-  }
-
-  async delete<T>(url: string): Promise<ApiResponse<T>> {
-    return this.api.delete<ApiResponse<T>>(url).then(response => response.data);
-  }
-
-  // File upload
-  async uploadFile(url: string, file: FormData): Promise<ApiResponse<string>> {
-    return this.api.post<ApiResponse<string>>(url, file, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }).then(response => response.data);
-  }
+export interface ApiError {
+  error: true;
+  message: string;
+  status?: number;
 }
 
-export const apiService = new ApiService(); 
+export const handleApiError = (error: unknown): ApiError => {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message || error.message;
+    return {
+      error: true,
+      message,
+      status: error.response?.status,
+    };
+  }
+  return {
+    error: true,
+    message: 'An unexpected error occurred',
+    status: 500,
+  };
+};
+
+export default api;

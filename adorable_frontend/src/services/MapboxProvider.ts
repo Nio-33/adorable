@@ -16,10 +16,10 @@ export class MapboxProvider implements MapProvider {
     try {
       const proximity = `${location.longitude},${location.latitude}`;
       const url = `${this.baseUrl}/${encodeURIComponent(query)}.json?access_token=${this.accessToken}&proximity=${proximity}&types=poi,place&limit=10`;
-      
+
       const response = await fetch(url);
       const data = await response.json();
-      
+
       return data.features.map((feature: any) => ({
         id: feature.id,
         placeId: feature.id,
@@ -27,11 +27,11 @@ export class MapboxProvider implements MapProvider {
         address: feature.place_name,
         location: {
           latitude: feature.center[1],
-          longitude: feature.center[0]
+          longitude: feature.center[0],
         },
         provider: 'mapbox',
         types: feature.place_type,
-        distance: feature.properties?.distance
+        distance: feature.properties?.distance,
       }));
     } catch (error) {
       console.error('Error searching places:', error);
@@ -53,7 +53,7 @@ export class MapboxProvider implements MapProvider {
         address: feature.place_name,
         location: {
           latitude: feature.center[1],
-          longitude: feature.center[0]
+          longitude: feature.center[0],
         },
         types: feature.place_type,
         photos: [],
@@ -61,7 +61,7 @@ export class MapboxProvider implements MapProvider {
         userRatingsTotal: feature.properties?.ratings_count,
         openingHours: feature.properties?.hours,
         website: feature.properties?.website,
-        phoneNumber: feature.properties?.phone
+        phoneNumber: feature.properties?.phone,
       };
     } catch (error) {
       console.error('Error getting place details:', error);
@@ -83,14 +83,14 @@ export class MapboxProvider implements MapProvider {
         location.longitude - radiusDegrees,
         location.latitude - radiusDegrees,
         location.longitude + radiusDegrees,
-        location.latitude + radiusDegrees
+        location.latitude + radiusDegrees,
       ].join(',');
 
-      let url = `${this.baseUrl}/${type || 'poi'}.json?access_token=${this.accessToken}&bbox=${bbox}&limit=50`;
-      
+      const url = `${this.baseUrl}/${type || 'poi'}.json?access_token=${this.accessToken}&bbox=${bbox}&limit=50`;
+
       const response = await fetch(url);
       const data = await response.json();
-      
+
       return data.features.map((feature: any) => ({
         id: feature.id,
         placeId: feature.id,
@@ -98,11 +98,11 @@ export class MapboxProvider implements MapProvider {
         address: feature.place_name,
         location: {
           latitude: feature.center[1],
-          longitude: feature.center[0]
+          longitude: feature.center[0],
         },
         provider: 'mapbox',
         types: feature.place_type,
-        distance: feature.properties?.distance
+        distance: feature.properties?.distance,
       }));
     } catch (error) {
       console.error('Error getting nearby places:', error);
@@ -114,19 +114,19 @@ export class MapboxProvider implements MapProvider {
     try {
       const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}`;
       const url = `${directionsUrl}?access_token=${this.accessToken}&geometries=geojson&overview=full`;
-      
+
       const response = await fetch(url);
       const data = await response.json();
-      
+
       return {
         route: data.routes[0].geometry,
         distance: data.routes[0].distance,
         duration: data.routes[0].duration,
-        steps: data.routes[0].legs[0].steps
+        steps: data.routes[0].legs[0].steps,
       };
     } catch (error) {
       console.error('Error getting directions:', error);
       throw error;
     }
   }
-} 
+}

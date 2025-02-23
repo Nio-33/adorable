@@ -49,4 +49,4 @@ export const MessagesNavigator: React.FC = () => {
       />
     </Stack.Navigator>
   );
-}; 
+};

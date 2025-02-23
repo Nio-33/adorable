@@ -66,4 +66,4 @@ class MapService implements MapProvider {
   }
 }
 
-export const mapService = MapService.getInstance(); 
+export const mapService = MapService.getInstance();

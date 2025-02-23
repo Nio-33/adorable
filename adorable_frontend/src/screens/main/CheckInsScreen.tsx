@@ -36,11 +36,11 @@ export const CheckInsScreen: React.FC = () => {
   const { user } = useAuth();
 
   const loadCheckIns = async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       setError(null);
       const checkInHistory = await placeInteractionService.getCheckIns(user.uid);
-      
+
       // Get place details for each check-in
       const checkInsWithDetails = await Promise.all(
         checkInHistory.map(async (checkIn) => {
@@ -187,4 +187,4 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 12,
   },
-}); 
+});

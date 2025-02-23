@@ -21,7 +21,7 @@ const SORT_OPTIONS: { label: string; value: SortOption }[] = [
 
 function CategoryScreenContent({ route, navigation }: Props) {
   const { category } = route.params;
-  const { 
+  const {
     places,
     loading,
     refreshing,
@@ -29,7 +29,7 @@ function CategoryScreenContent({ route, navigation }: Props) {
     error,
     getPlacesByCategory,
     loadMorePlaces,
-    refreshPlaces
+    refreshPlaces,
   } = usePlaces();
 
   const [sortBy, setSortBy] = useState<SortOption>('rating');
@@ -129,7 +129,7 @@ function CategoryScreenContent({ route, navigation }: Props) {
           Sort
         </Button>
       </View>
-      
+
       {showSortOptions && renderSortOptions()}
 
       <List<Place>
@@ -215,4 +215,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border.light,
   },
-}); 
+});

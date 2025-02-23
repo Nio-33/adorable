@@ -30,7 +30,7 @@ export const SavedPlacesScreen: React.FC = () => {
   const { user } = useAuth();
 
   const loadSavedPlaces = async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       setError(null);
       const places = await placeInteractionService.getSavedPlaces(user.uid);
@@ -161,4 +161,4 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 12,
   },
-}); 
+});

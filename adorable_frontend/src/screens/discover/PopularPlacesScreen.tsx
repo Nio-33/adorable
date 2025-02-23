@@ -27,7 +27,7 @@ function PopularPlacesContent({ navigation }: Props) {
     error,
     getPopularPlaces,
     loadMorePlaces,
-    refreshPlaces
+    refreshPlaces,
   } = usePlaces();
 
   const [sortBy, setSortBy] = useState<SortOption>('rating');
@@ -177,4 +177,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border.light,
   },
-}); 
+});

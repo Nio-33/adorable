@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
-import { firebaseService } from '../services/firebase';
-import { apiService } from '../services/api';
-import { User, ApiResponse } from '../types';
-import { storage } from '../utils/helpers';
-import { STORAGE_KEYS } from '../config/constants';
+import { User } from '../types';
+import { firebase } from '../services/firebase';
 
 interface AuthState {
   user: User | null;
@@ -12,62 +8,37 @@ interface AuthState {
   error: string | null;
 }
 
-interface UseAuth {
-  user: User | null;
-  loading: boolean;
-  error: string | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  updateProfile: (data: Partial<User>) => Promise<void>;
-}
-
-export function useAuth(): UseAuth {
+export const useAuth = () => {
   const [state, setState] = useState<AuthState>({
     user: null,
     loading: true,
     error: null,
   });
 
-  const handleError = (error: any) => {
-    console.error('Auth error:', error);
-    setState(prev => ({ ...prev, error: error.message, loading: false }));
-  };
-
-  // Convert Firebase user to our User type
-  const transformUser = async (firebaseUser: FirebaseUser): Promise<User> => {
-    try {
-      // Fetch additional user data from our backend
-      const response = await apiService.get<User>(`/users/${firebaseUser.uid}`);
-      return response.data;
-    } catch (error) {
-      // If user doesn't exist in our backend yet, create basic profile
-      return {
-        id: firebaseUser.uid,
-        email: firebaseUser.email!,
-        username: firebaseUser.displayName || firebaseUser.email!.split('@')[0],
-        displayName: firebaseUser.displayName || '',
-        photoURL: firebaseUser.photoURL || '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    }
-  };
-
-  // Listen to auth state changes
   useEffect(() => {
-    const unsubscribe = firebaseService.onAuthStateChanged(async (firebaseUser) => {
+    const unsubscribe = firebase.auth().onAuthStateChanged(async (firebaseUser) => {
       try {
         if (firebaseUser) {
-          const user = await transformUser(firebaseUser);
-          setState({ user, loading: false, error: null });
-          await storage.setItem(STORAGE_KEYS.USER_DATA, user);
+          // Get additional user data from your database
+          const userData = await firebase.getUserById(firebaseUser.uid);
+          setState({
+            user: userData,
+            loading: false,
+            error: null,
+          });
         } else {
-          setState({ user: null, loading: false, error: null });
-          await storage.removeItem(STORAGE_KEYS.USER_DATA);
+          setState({
+            user: null,
+            loading: false,
+            error: null,
+          });
         }
       } catch (error) {
-        handleError(error);
+        setState({
+          user: null,
+          loading: false,
+          error: 'Error loading user data',
+        });
       }
     });
 
@@ -77,34 +48,38 @@ export function useAuth(): UseAuth {
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
-      await firebaseService.signIn(email, password);
+      await firebase.auth().signInWithEmailAndPassword(email, password);
     } catch (error) {
-      handleError(error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Invalid email or password',
+      }));
       throw error;
     }
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, username: string) => {
+  const signUp = useCallback(async (email: string, password: string, userData: Partial<User>) => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
-      const { user: firebaseUser } = await firebaseService.signUp(email, password);
-      
-      // Update Firebase profile
-      await firebaseService.updateUserProfile(username);
-      
-      // Create user in our backend
-      const userData: Partial<User> = {
-        id: firebaseUser.uid,
-        email,
-        username,
-        displayName: username,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      await apiService.post('/users', userData);
+      const { user: firebaseUser } = await firebase.auth().createUserWithEmailAndPassword(email, password);
+
+      if (firebaseUser) {
+        // Create user profile in your database
+        await firebase.createUser({
+          id: firebaseUser.uid,
+          email,
+          ...userData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
     } catch (error) {
-      handleError(error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Error creating account',
+      }));
       throw error;
     }
   }, []);
@@ -112,37 +87,38 @@ export function useAuth(): UseAuth {
   const signOut = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
-      await firebaseService.signOut();
+      await firebase.auth().signOut();
     } catch (error) {
-      handleError(error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Error signing out',
+      }));
       throw error;
     }
   }, []);
 
-  const updateProfile = useCallback(async (data: Partial<User>) => {
+  const updateProfile = useCallback(async (updates: Partial<User>) => {
     try {
+      if (!state.user) {throw new Error('No user logged in');}
+
       setState(prev => ({ ...prev, loading: true, error: null }));
-      
-      // Update Firebase profile if display name or photo changed
-      if (data.displayName || data.photoURL) {
-        await firebaseService.updateUserProfile(data.displayName, data.photoURL);
-      }
-      
-      // Update backend profile
-      const response = await apiService.put<User>(`/users/${state.user?.id}`, data);
+      await firebase.updateUser(state.user.id, updates);
+
       setState(prev => ({
         ...prev,
-        user: response.data,
         loading: false,
-        error: null,
+        user: prev.user ? { ...prev.user, ...updates } : null,
       }));
-      
-      await storage.setItem(STORAGE_KEYS.USER_DATA, response.data);
     } catch (error) {
-      handleError(error);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Error updating profile',
+      }));
       throw error;
     }
-  }, [state.user?.id]);
+  }, [state.user]);
 
   return {
     user: state.user,
@@ -153,4 +129,4 @@ export function useAuth(): UseAuth {
     signOut,
     updateProfile,
   };
-} 
+};

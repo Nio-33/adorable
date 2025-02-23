@@ -86,7 +86,7 @@ const AddReviewScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Write a Review</Text>
-        
+
         <View style={styles.ratingSection}>
           <Text style={styles.label}>Rating</Text>
           {renderStars()}
@@ -180,4 +180,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddReviewScreen; 
+export default AddReviewScreen;

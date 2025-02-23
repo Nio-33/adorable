@@ -1,6 +1,7 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { Location, SearchResult } from './map';
 import { UserProfile, FriendRequest } from '../services/PeopleService';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 export type RootStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList>;
@@ -27,12 +28,9 @@ export type RootStackParamList = {
 };
 
 export type MainTabParamList = {
-  Discover: undefined;
-  Chat: undefined;
-  People: undefined;
-  Profile: undefined;
   Map: undefined;
-  Places: undefined;
+  Chat: undefined;
+  Profile: undefined;
 };
 
 export type AuthStackParamList = {
@@ -42,12 +40,15 @@ export type AuthStackParamList = {
 };
 
 export type MapStackParamList = {
-  MapHome: undefined;
+  Map: undefined;
   PlaceDetails: { placeId: string };
   SearchLocation: { initialResults?: SearchResult[] };
   NearbyUsers: undefined;
   AddReview: { placeId: string };
+  UserProfile: { userId: string };
 };
+
+export type MapNavigationProp = StackNavigationProp<MapStackParamList>;
 
 export type PeopleStackParamList = {
   PeopleHome: undefined;
@@ -76,4 +77,4 @@ export type SettingsStackParamList = {
   NotificationSettings: undefined;
   LanguageSettings: undefined;
   BlockedUsers: undefined;
-}; 
+};

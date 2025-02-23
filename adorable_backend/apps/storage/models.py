@@ -1,84 +1,125 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from users.models import User
+from django.conf import settings
+from django.core.validators import FileExtensionValidator
+import uuid
+
+
+def file_upload_path(instance, filename):
+    # Generate a unique path for each file
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    return f"user_files/{instance.user.id}/{filename}"
+
 
 class File(models.Model):
-    """Model for managing uploaded files"""
+    """Model for storing file information."""
+    
     FILE_TYPES = [
-        ('image', 'Image'),
-        ('video', 'Video'),
-        ('document', 'Document'),
-        ('other', 'Other')
+        ('image', _('Image')),
+        ('video', _('Video')),
+        ('document', _('Document')),
+        ('audio', _('Audio')),
+        ('other', _('Other')),
     ]
-
-    file = models.FileField(upload_to='uploads/%Y/%m/%d/')
-    file_type = models.CharField(max_length=20, choices=FILE_TYPES)
-    original_filename = models.CharField(max_length=255)
-    mime_type = models.CharField(max_length=100)
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='files',
+        verbose_name=_('user')
+    )
+    
+    file = models.FileField(
+        upload_to=file_upload_path,
+        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'])]
+    )
+    file_type = models.CharField(max_length=50)
+    original_name = models.CharField(max_length=255)
     size = models.BigIntegerField()  # Size in bytes
-    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    mime_type = models.CharField(max_length=100)
+    
+    # Metadata
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    tags = models.JSONField(default=list)
+    
+    # Privacy settings
+    is_public = models.BooleanField(default=False)
+    password_protected = models.BooleanField(default=False)
+    password_hash = models.CharField(max_length=128, blank=True)
+    
+    # Usage tracking
+    download_count = models.PositiveIntegerField(default=0)
+    last_accessed = models.DateTimeField(null=True, blank=True)
+    
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     class Meta:
-        db_table = 'files'
+        verbose_name = _('file')
+        verbose_name_plural = _('files')
+        ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['file_type']),
-            models.Index(fields=['uploaded_by']),
+            models.Index(fields=['user', 'file_type']),
+            models.Index(fields=['created_at']),
         ]
+    
+    def __str__(self):
+        return self.original_name
+    
+    def get_file_size_display(self):
+        """Return human-readable file size."""
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if self.size < 1024:
+                return f"{self.size:.1f} {unit}"
+            self.size /= 1024
+        return f"{self.size:.1f} TB"
 
-class Image(models.Model):
-    """Model for storing image metadata"""
-    file = models.OneToOneField(File, on_delete=models.CASCADE, related_name='image_metadata')
-    width = models.IntegerField()
-    height = models.IntegerField()
-    format = models.CharField(max_length=10)  # e.g., JPEG, PNG
-    has_thumbnail = models.BooleanField(default=False)
-    thumbnail_path = models.CharField(max_length=255, null=True, blank=True)
 
-    class Meta:
-        db_table = 'images'
-
-class Video(models.Model):
-    """Model for storing video metadata"""
-    file = models.OneToOneField(File, on_delete=models.CASCADE, related_name='video_metadata')
-    duration = models.FloatField()  # Duration in seconds
-    width = models.IntegerField()
-    height = models.IntegerField()
-    format = models.CharField(max_length=10)  # e.g., MP4, MOV
-    has_thumbnail = models.BooleanField(default=False)
-    thumbnail_path = models.CharField(max_length=255, null=True, blank=True)
-
-    class Meta:
-        db_table = 'videos'
-
-class FilePermission(models.Model):
-    """Model for managing file access permissions"""
-    PERMISSION_TYPES = [
-        ('private', 'Private'),
-        ('public', 'Public'),
-        ('shared', 'Shared')
+class SharedFile(models.Model):
+    """Model for tracking file sharing."""
+    
+    PERMISSION_CHOICES = [
+        ('view', 'View Only'),
+        ('edit', 'Edit'),
+        ('full', 'Full Access')
     ]
-
-    file = models.OneToOneField(File, on_delete=models.CASCADE, related_name='permission')
-    permission_type = models.CharField(max_length=20, choices=PERMISSION_TYPES, default='private')
-    shared_with = models.ManyToManyField(User, related_name='shared_files', blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
+    
+    file = models.ForeignKey(
+        File,
+        on_delete=models.CASCADE,
+        related_name='shares',
+        verbose_name=_('file')
+    )
+    shared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='shared_files',
+        verbose_name=_('shared by')
+    )
+    shared_with = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='received_files',
+        verbose_name=_('shared with')
+    )
+    
+    # Share settings
+    permission = models.CharField(max_length=10, choices=PERMISSION_CHOICES, default='view')
+    can_reshare = models.BooleanField(default=False)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    
     class Meta:
-        db_table = 'file_permissions'
-
-class FileUsage(models.Model):
-    """Model for tracking file usage"""
-    file = models.ForeignKey(File, on_delete=models.CASCADE, related_name='usage_records')
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    accessed_at = models.DateTimeField(auto_now_add=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'file_usage'
-        indexes = [
-            models.Index(fields=['file', 'accessed_at']),
-        ] 
+        verbose_name = _('shared file')
+        verbose_name_plural = _('shared files')
+        unique_together = ('file', 'shared_with')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.file.original_name} shared with {self.shared_with.username}" 

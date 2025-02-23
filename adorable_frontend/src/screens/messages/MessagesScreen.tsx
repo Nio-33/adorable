@@ -7,7 +7,7 @@ import { Typography, Button, Loading } from '../../components/atoms';
 import { List, ListItem, SearchBar } from '../../components/molecules';
 import { useChat } from '../../hooks/useChat';
 import { useAuth } from '../../hooks/useAuth';
-import { ChatRoom } from '../../types';
+import { ChatRoom, User } from '../../types';
 import type { MessagesStackParamList } from './navigation/MessagesNavigator';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<MessagesStackParamList, 'MessagesList'>;
@@ -32,9 +32,11 @@ export const MessagesScreen: React.FC = () => {
 
   const handleChatPress = (chatRoom: ChatRoom) => {
     const otherUser = chatRoom.participants.find(p => p.id !== user?.id);
+    if (!otherUser) {return;}
+
     navigation.navigate('ChatRoom', {
       roomId: chatRoom.id,
-      title: otherUser?.displayName || 'Chat',
+      title: otherUser.displayName,
     });
   };
 
@@ -44,13 +46,13 @@ export const MessagesScreen: React.FC = () => {
 
   const renderChatRoom = ({ item: chatRoom }: { item: ChatRoom }) => {
     const otherUser = chatRoom.participants.find(p => p.id !== user?.id);
-    if (!otherUser) return null;
+    if (!otherUser) {return null;}
 
     return (
       <ListItem
         title={otherUser.displayName}
         subtitle={chatRoom.lastMessage?.content}
-        avatar={{ uri: otherUser.photoURL }}
+        avatar={otherUser.photoURL ? { uri: otherUser.photoURL } : undefined}
         onPress={() => handleChatPress(chatRoom)}
         rightContent={
           chatRoom.lastMessage && (
@@ -60,7 +62,7 @@ export const MessagesScreen: React.FC = () => {
                 color={COLORS.text.secondary}
                 style={styles.timestamp}
               >
-                {new Date(chatRoom.lastMessage.timestamp).toLocaleTimeString([], {
+                {chatRoom.lastMessage.timestamp.toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
@@ -68,7 +70,7 @@ export const MessagesScreen: React.FC = () => {
               {!chatRoom.lastMessage.read && chatRoom.lastMessage.senderId !== user?.id && (
                 <View style={styles.unreadBadge}>
                   <Typography variant="caption" color={COLORS.text.inverse}>
-                    1
+                    {chatRoom.unreadCount?.[user?.id || ''] || 1}
                   </Typography>
                 </View>
               )}
@@ -167,4 +169,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SPACING.lg,
   },
-}); 
+});

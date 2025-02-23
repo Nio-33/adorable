@@ -14,7 +14,8 @@ import MapboxGL from '@rnmapbox/maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Navigation2, User, Layers, X, MapPin, Phone, Globe, Clock } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { MapView, Camera, UserLocation } from '@rnmapbox/maps';
 import { MapStackParamList } from '../../types/navigation';
 import { Location, SearchResult, NearbyUser, PlaceDetails } from '../../types/map';
 import { mapService } from '../../services/MapService';
@@ -24,11 +25,14 @@ import { useLocation } from '../../hooks/useLocation';
 import { ENV } from '../../config/env';
 import { Icon } from '../../components/common/Icon';
 import { ErrorView } from '../../components/common/ErrorView';
+import { useMapService } from '../../hooks/useMapService';
+import { MapNavigationProp } from '../../types/navigation';
+import { COLORS } from '../../config/theme';
 
 // Initialize Mapbox
 MapboxGL.setAccessToken(ENV.MAPS.MAPBOX_ACCESS_TOKEN);
 
-type MapScreenNavigationProp = NativeStackNavigationProp<MapStackParamList, 'MapHome'>;
+type MapScreenNavigationProp = StackNavigationProp<MapStackParamList, 'Map'>;
 
 const INITIAL_ZOOM = 15;
 const MAX_ZOOM_LEVEL = 20;
@@ -53,12 +57,14 @@ const MapScreen: React.FC = () => {
   const searchTimeout = useRef<NodeJS.Timeout>();
   const locationTrackingCleanup = useRef<(() => void) | null>(null);
   const { user } = useAuth();
+  const { getNearbyPlaces, getNearbyUsers } = useMapService();
 
   useEffect(() => {
     if (userLocation) {
-      loadNearbyUsers();
       loadNearbyPlaces();
-      startLocationTracking();
+      loadNearbyUsers();
+      const cleanup = startLocationTracking();
+      locationTrackingCleanup.current = cleanup;
     }
     return () => {
       if (locationTrackingCleanup.current) {
@@ -67,16 +73,15 @@ const MapScreen: React.FC = () => {
     };
   }, [userLocation]);
 
-  const startLocationTracking = async () => {
-    try {
-      const cleanup = await userLocationService.startLocationTracking((location) => {
-        // Update local state if needed
-        refreshLocation();
-      });
-      locationTrackingCleanup.current = cleanup;
-    } catch (error) {
-      console.error('Error starting location tracking:', error);
+  const startLocationTracking = () => {
+    if (userLocation) {
+      // Implementation of location tracking
+      // This is just a placeholder - actual implementation would depend on your requirements
+      return () => {
+        // Cleanup function
+      };
     }
+    return () => {};
   };
 
   const handleSearch = async (query: string) => {
@@ -107,22 +112,24 @@ const MapScreen: React.FC = () => {
   };
 
   const loadNearbyUsers = async () => {
-    if (!userLocation) return;
-    try {
-      const users = await mapService.getNearbyUsers(userLocation, 5);
-      setNearbyUsers(users);
-    } catch (error) {
-      console.error('Error loading nearby users:', error);
+    if (userLocation) {
+      try {
+        const users = await getNearbyUsers(userLocation);
+        setNearbyUsers(users);
+      } catch (error) {
+        console.error('Error loading nearby users:', error);
+      }
     }
   };
 
   const loadNearbyPlaces = async () => {
-    if (!userLocation) return;
-    try {
-      const places = await mapService.getNearbyPlaces(userLocation, SEARCH_RADIUS);
-      setNearbyPlaces(places);
-    } catch (error) {
-      console.error('Error loading nearby places:', error);
+    if (userLocation) {
+      try {
+        const places = await getNearbyPlaces(userLocation);
+        setNearbyPlaces(places);
+      } catch (error) {
+        console.error('Error loading nearby places:', error);
+      }
     }
   };
 
@@ -203,13 +210,9 @@ const MapScreen: React.FC = () => {
       </View>
 
       {/* Map View */}
-      <MapboxGL.MapView
-        ref={mapRef}
-        style={styles.map}
-        styleURL={mapType === 'streets' ? MapboxGL.StyleURL.Street : MapboxGL.StyleURL.Satellite}
-        onPress={handleMapPress}
-      >
-        <MapboxGL.Camera
+      <MapView style={styles.map}>
+        <UserLocation visible={true} />
+        <Camera
           ref={cameraRef}
           zoomLevel={INITIAL_ZOOM}
           maxZoomLevel={MAX_ZOOM_LEVEL}
@@ -221,9 +224,6 @@ const MapScreen: React.FC = () => {
           }
         />
 
-        {/* User Location */}
-        <MapboxGL.UserLocation visible={true} />
-
         {/* Search Results */}
         {searchResults.map((result) => (
           <MapboxGL.PointAnnotation
@@ -234,7 +234,7 @@ const MapScreen: React.FC = () => {
           >
             <View style={[
               styles.markerContainer,
-              selectedPlace?.id === result.id && styles.selectedMarker
+              selectedPlace?.id === result.id && styles.selectedMarker,
             ]}>
               <Icon icon={MapPin} size={24} color="#1e1b4b" />
             </View>
@@ -252,7 +252,7 @@ const MapScreen: React.FC = () => {
           >
             <View style={[
               styles.markerContainer,
-              selectedPlace?.id === place.id && styles.selectedMarker
+              selectedPlace?.id === place.id && styles.selectedMarker,
             ]}>
               <Icon icon={MapPin} size={24} color="#4338ca" />
             </View>
@@ -274,7 +274,7 @@ const MapScreen: React.FC = () => {
             <MapboxGL.Callout title={nearbyUser.displayName} />
           </MapboxGL.PointAnnotation>
         ))}
-      </MapboxGL.MapView>
+      </MapView>
 
       {/* Map Controls */}
       <View style={styles.controls}>

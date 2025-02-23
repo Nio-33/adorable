@@ -55,7 +55,7 @@ export const MediaActionSheet: React.FC<MediaActionSheetProps> = ({
     return null;
   }
 
-  if (!visible) return null;
+  if (!visible) {return null;}
 
   return (
     <View style={styles.container}>
@@ -134,4 +134,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1a1a1a',
   },
-}); 
+});

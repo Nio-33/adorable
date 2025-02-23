@@ -127,4 +127,4 @@ const styles = StyleSheet.create({
     bottom: -SPACING.xs,
     left: -SPACING.xs,
   },
-}); 
+});

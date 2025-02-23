@@ -1,239 +1,253 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/navigation';
 import { ArrowLeft, UserX } from 'lucide-react-native';
-import { SettingsStackParamList } from '../../types/navigation';
-import { useAuth } from '../../contexts/AuthContext';
-import { peopleService } from '../../services/PeopleService';
-import { ChatUser } from '../../types/ChatUser';
-import { Icon } from '../../components/common/Icon';
-import { ChatAvatar } from '../../components/chat/ChatAvatar';
 
-type BlockedUsersNavigationProp = NativeStackNavigationProp<SettingsStackParamList>;
+type BlockedUsersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface BlockedUserItemProps {
-  user: ChatUser;
-  onUnblock: () => void;
-}
+type BlockedUser = {
+  id: number;
+  name: string;
+  username: string;
+  blockedDate: string;
+  avatar: string;
+};
 
-const BlockedUserItem: React.FC<BlockedUserItemProps> = ({ user, onUnblock }) => (
-  <View style={styles.userItem}>
-    <ChatAvatar
-      photoURL={user.photoURL}
-      displayName={user.displayName}
-      size={40}
-    />
-    <View style={styles.userInfo}>
-      <Text style={styles.userName}>{user.displayName}</Text>
-      <Text style={styles.userEmail}>{user.email}</Text>
-    </View>
-    <TouchableOpacity
-      style={styles.unblockButton}
-      onPress={onUnblock}
-    >
-      <Text style={styles.unblockText}>Unblock</Text>
-    </TouchableOpacity>
-  </View>
-);
+const BlockedUsersScreen = () => {
+  const navigation = useNavigation<BlockedUsersScreenNavigationProp>();
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([
+    {
+      id: 1,
+      name: 'Sarah Johnson',
+      username: '@sarahj',
+      blockedDate: '2024-01-15',
+      avatar: 'https://api.adorable.io/avatars/40/sarah.png',
+    },
+    {
+      id: 2,
+      name: 'Michael Chen',
+      username: '@mchen',
+      blockedDate: '2024-01-20',
+      avatar: 'https://api.adorable.io/avatars/40/michael.png',
+    },
+    {
+      id: 3,
+      name: 'David Wilson',
+      username: '@dwilson',
+      blockedDate: '2024-01-25',
+      avatar: 'https://api.adorable.io/avatars/40/david.png',
+    },
+  ]);
 
-export const BlockedUsersScreen: React.FC = () => {
-  const navigation = useNavigation<BlockedUsersNavigationProp>();
-  const { user } = useAuth();
-  const [blockedUsers, setBlockedUsers] = useState<ChatUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadBlockedUsers = async () => {
-    if (!user) return;
-    try {
-      setError(null);
-      setLoading(true);
-      const users = await peopleService.getBlockedUsers(user.uid);
-      setBlockedUsers(users);
-    } catch (err) {
-      setError('Failed to load blocked users');
-      console.error('Error loading blocked users:', err);
-    } finally {
-      setLoading(false);
-    }
+  const handleUnblock = (userId: number) => {
+    setBlockedUsers(prev => prev.filter(user => user.id !== userId));
   };
 
-  const handleUnblock = async (blockedUser: ChatUser) => {
-    if (!user) return;
-    
-    Alert.alert(
-      'Unblock User',
-      `Are you sure you want to unblock ${blockedUser.displayName}?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Unblock',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await peopleService.unblockUser(user.uid, blockedUser.id);
-              setBlockedUsers(users => users.filter(u => u.id !== blockedUser.id));
-            } catch (error) {
-              Alert.alert('Error', 'Failed to unblock user');
-            }
-          },
-        },
-      ]
-    );
+  const handleUnblockAll = () => {
+    setBlockedUsers([]);
   };
-
-  useEffect(() => {
-    loadBlockedUsers();
-  }, [user]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Icon icon={ArrowLeft} size={24} color="#1a1a1a" />
+          <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
-        <Text style={styles.title}>Blocked Users</Text>
+        <Text style={styles.headerTitle}>Blocked Users</Text>
       </View>
 
-      {loading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" />
-        </View>
-      ) : error ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={loadBlockedUsers}
-          >
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={blockedUsers}
-          renderItem={({ item }) => (
-            <BlockedUserItem
-              user={item}
-              onUnblock={() => handleUnblock(item)}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.content}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Icon icon={UserX} size={48} color="#666" />
-              <Text style={styles.emptyText}>No blocked users</Text>
+      <ScrollView style={styles.content}>
+        {blockedUsers.length > 0 ? (
+          <View style={styles.card}>
+            {blockedUsers.map((user, index) => (
+              <View
+                key={user.id}
+                style={[
+                  styles.userItem,
+                  index !== blockedUsers.length - 1 && styles.userItemBorder,
+                ]}
+              >
+                <View style={styles.userInfo}>
+                  <Image
+                    source={{ uri: user.avatar }}
+                    style={styles.avatar}
+                  />
+                  <View style={styles.userDetails}>
+                    <Text style={styles.userName}>{user.name}</Text>
+                    <Text style={styles.userHandle}>{user.username}</Text>
+                    <Text style={styles.blockedDate}>
+                      Blocked on {new Date(user.blockedDate).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleUnblock(user.id)}
+                  style={styles.unblockButton}
+                >
+                  <Text style={styles.unblockButtonText}>Unblock</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyCard}>
+            <View style={styles.emptyIconContainer}>
+              <UserX size={32} color="#a5b4fc" />
             </View>
-          }
-        />
-      )}
-    </SafeAreaView>
+            <Text style={styles.emptyTitle}>No Blocked Users</Text>
+            <Text style={styles.emptyDescription}>You haven't blocked any users yet.</Text>
+          </View>
+        )}
+
+        {blockedUsers.length > 0 && (
+          <TouchableOpacity
+            onPress={handleUnblockAll}
+            style={styles.unblockAllButton}
+          >
+            <Text style={styles.unblockAllButtonText}>Unblock All Users</Text>
+          </TouchableOpacity>
+        )}
+
+        <Text style={styles.footerText}>
+          Blocked users cannot view your profile or send you messages.
+        </Text>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#1e1b4b', // indigo-950
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    backgroundColor: '#312e81', // indigo-900
+    gap: 16,
   },
   backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  content: {
-    flexGrow: 1,
-  },
-  centerContainer: {
-    flex: 1,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  errorText: {
-    fontSize: 16,
-    color: '#ef4444',
-    marginBottom: 16,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: 'white',
   },
-  retryButton: {
-    padding: 12,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
+  content: {
+    flex: 1,
+    padding: 16,
   },
-  retryText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1e1b4b',
+  card: {
+    backgroundColor: '#312e81', // indigo-900
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
+  },
+  userItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#4338ca', // indigo-800
   },
   userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
+    marginRight: 12,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#4338ca', // indigo-800
+  },
+  userDetails: {
     marginLeft: 12,
   },
   userName: {
+    color: 'white',
     fontSize: 16,
     fontWeight: '500',
-    color: '#1a1a1a',
-    marginBottom: 2,
   },
-  userEmail: {
+  userHandle: {
+    color: '#a5b4fc', // indigo-300
     fontSize: 14,
-    color: '#666',
+  },
+  blockedDate: {
+    color: '#818cf8', // indigo-400
+    fontSize: 12,
   },
   unblockButton: {
-    paddingHorizontal: 16,
+    backgroundColor: '#4338ca', // indigo-800
     paddingVertical: 8,
-    backgroundColor: '#fee2e2',
+    paddingHorizontal: 16,
     borderRadius: 8,
   },
-  unblockText: {
+  unblockButtonText: {
+    color: 'white',
     fontSize: 14,
     fontWeight: '500',
-    color: '#ef4444',
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  emptyCard: {
+    backgroundColor: '#312e81', // indigo-900
+    borderRadius: 12,
+    padding: 32,
     alignItems: 'center',
-    padding: 20,
-    marginTop: 100,
   },
-  emptyText: {
+  emptyIconContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#4338ca', // indigo-800
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  emptyDescription: {
+    color: '#a5b4fc', // indigo-300
     fontSize: 16,
-    color: '#666',
-    marginTop: 12,
+    textAlign: 'center',
   },
-}); 
+  unblockAllButton: {
+    backgroundColor: '#dc2626', // red-600
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  unblockAllButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  footerText: {
+    color: '#a5b4fc', // indigo-300
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 24,
+    marginBottom: 32,
+  },
+});
+
+export default BlockedUsersScreen;

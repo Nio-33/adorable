@@ -1,156 +1,126 @@
 from django.db import models
-from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
 from django.utils.translation import gettext_lazy as _
-from users.models import User
-from locations.models import Place
+from django.conf import settings
 
-class Connection(models.Model):
-    """User connections/following model"""
+
+class Follow(models.Model):
+    """Model for user following relationships."""
+    
     follower = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='following'
+        related_name='following',
+        verbose_name=_('follower')
     )
-    following = models.ForeignKey(
+    followed = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='followers'
+        related_name='followers',
+        verbose_name=_('following')
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_mutual = models.BooleanField(default=False)
-
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    
     class Meta:
-        unique_together = ('follower', 'following')
-        db_table = 'social_connections'
-
+        verbose_name = _('follow')
+        verbose_name_plural = _('follows')
+        unique_together = ('follower', 'followed')
+        ordering = ['-created_at']
+    
     def __str__(self):
-        return f"{self.follower.username} -> {self.following.username}"
+        return f"{self.follower.username} follows {self.followed.username}"
 
-class Chat(models.Model):
-    """Chat room model"""
-    participants = models.ManyToManyField(
+
+class Block(models.Model):
+    """Model for user blocking relationships."""
+    
+    blocker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        related_name='chats'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_group_chat = models.BooleanField(default=False)
-    title = models.CharField(max_length=255, null=True, blank=True)
-    last_message = models.TextField(null=True, blank=True)
-    last_message_at = models.DateTimeField(null=True)
-
-    class Meta:
-        db_table = 'social_chats'
-
-    def __str__(self):
-        return f"Chat {self.id} - {self.title or 'Direct Message'}"
-
-class Message(models.Model):
-    """Chat message model"""
-    chat = models.ForeignKey(
-        Chat,
         on_delete=models.CASCADE,
-        related_name='messages'
+        related_name='blocking',
+        verbose_name=_('user')
     )
-    sender = models.ForeignKey(
+    blocked = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
+        related_name='blocked_by',
+        verbose_name=_('blocked user')
+    )
+    reason = models.TextField(_('reason'), blank=True)
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _('block')
+        verbose_name_plural = _('blocks')
+        unique_together = ('blocker', 'blocked')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.blocker.username} blocked {self.blocked.username}"
+
+    def save(self, *args, **kwargs):
+        # When blocking a user, remove any existing follow relationships
+        Follow.objects.filter(
+            models.Q(follower=self.blocker, followed=self.blocked) |
+            models.Q(follower=self.blocked, followed=self.blocker)
+        ).delete()
+        super().save(*args, **kwargs)
+
+
+class Report(models.Model):
+    """Model for user reports."""
+    
+    REPORT_TYPES = [
+        ('spam', _('Spam')),
+        ('abuse', _('Abuse')),
+        ('inappropriate', _('Inappropriate Content')),
+        ('other', _('Other')),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', _('Pending')),
+        ('investigating', _('Investigating')),
+        ('resolved', _('Resolved')),
+        ('dismissed', _('Dismissed')),
+    ]
+    
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reports_filed',
+        verbose_name=_('reporter')
+    )
+    reported = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reports_received',
+        verbose_name=_('reported user')
+    )
+    type = models.CharField(
+        _('report type'),
+        max_length=20,
+        choices=REPORT_TYPES
+    )
+    description = models.TextField(_('description'))
+    evidence = models.FileField(
+        _('evidence'),
+        upload_to='reports/',
         null=True,
-        related_name='sent_messages'
-    )
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-    read_by = ArrayField(
-        models.UUIDField(),
-        default=list,
         blank=True
     )
-    attachment_url = models.URLField(null=True, blank=True)
-    attachment_type = models.CharField(max_length=50, null=True, blank=True)
-
-    class Meta:
-        db_table = 'social_messages'
-        ordering = ['created_at']
-
-    def __str__(self):
-        return f"Message from {self.sender.username} in Chat {self.chat_id}"
-
-class Notification(models.Model):
-    """User notification model"""
-    
-    class NotificationType(models.TextChoices):
-        NEW_FOLLOWER = 'new_follower', _('New Follower')
-        NEW_MESSAGE = 'new_message', _('New Message')
-        PLACE_REVIEW = 'place_review', _('Place Review')
-        NEARBY_EVENT = 'nearby_event', _('Nearby Event')
-        MENTION = 'mention', _('Mention')
-        SYSTEM = 'system', _('System Notification')
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='notifications'
-    )
-    type = models.CharField(
+    status = models.CharField(
+        _('status'),
         max_length=20,
-        choices=NotificationType.choices
+        choices=STATUS_CHOICES,
+        default='pending'
     )
-    title = models.CharField(max_length=255)
-    message = models.TextField()
-    data = models.JSONField(default=dict, blank=True)
-    is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    action_url = models.URLField(null=True, blank=True)
-
-    class Meta:
-        db_table = 'social_notifications'
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"{self.type} notification for {self.user.username}"
-
-class Activity(models.Model):
-    """User activity model"""
+    admin_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
     
-    class ActivityType(models.TextChoices):
-        FOLLOW = 'follow', _('Follow')
-        REVIEW = 'review', _('Review')
-        VISIT = 'visit', _('Visit')
-        SAVE_PLACE = 'save_place', _('Save Place')
-        SHARE = 'share', _('Share')
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='activities'
-    )
-    type = models.CharField(
-        max_length=20,
-        choices=ActivityType.choices
-    )
-    target_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='targeted_activities'
-    )
-    target_place = models.ForeignKey(
-        'locations.Place',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='activities'
-    )
-    data = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
     class Meta:
-        db_table = 'social_activities'
+        verbose_name = _('report')
+        verbose_name_plural = _('reports')
         ordering = ['-created_at']
-        verbose_name_plural = 'activities'
-
+    
     def __str__(self):
-        return f"{self.user.username}'s {self.type} activity" 
+        return f"Report by {self.reporter.username} against {self.reported.username}" 

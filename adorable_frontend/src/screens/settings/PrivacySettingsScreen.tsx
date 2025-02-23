@@ -1,177 +1,304 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ArrowLeft } from 'lucide-react-native';
-import { SettingsStackParamList } from '../../types/navigation';
-import { Icon } from '../../components/common/Icon';
+import { View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet } from 'react-native';
+import { RootScreenProps } from '@/types/navigation';
+import { Shield, MapPin, MessageSquare, AlertCircle, ArrowLeft } from 'lucide-react-native';
+import { Picker } from '@react-native-picker/picker';
+import { PrivacySettings } from '@/types/forms';
 
-type PrivacySettingsNavigationProp = NativeStackNavigationProp<SettingsStackParamList>;
+const visibilityOptions = [
+  { value: 'everyone', label: 'Everyone' },
+  { value: 'contacts', label: 'Contacts Only' },
+  { value: 'private', label: 'Private' },
+] as const;
 
-interface PrivacyToggleProps {
-  title: string;
-  description: string;
-  value: boolean;
-  onValueChange: (value: boolean) => void;
-}
+const PrivacySettingsScreen: React.FC<RootScreenProps> = ({ navigation }) => {
+  const [settings, setSettings] = useState<PrivacySettings>({
+    profile: {
+      visibility: 'everyone',
+      showLocation: true,
+      showActivity: true,
+      allowTagging: true,
+    },
+    location: {
+      shareRealTime: false,
+      showNearby: true,
+      preciseLocation: true,
+    },
+    messaging: {
+      allowDirect: 'contacts',
+      readReceipts: true,
+      onlineStatus: true,
+    },
+  });
 
-const PrivacyToggle: React.FC<PrivacyToggleProps> = ({
-  title,
-  description,
-  value,
-  onValueChange,
-}) => (
-  <View style={styles.toggleItem}>
-    <View style={styles.toggleInfo}>
-      <Text style={styles.toggleTitle}>{title}</Text>
-      <Text style={styles.toggleDescription}>{description}</Text>
-    </View>
-    <Switch
-      value={value}
-      onValueChange={onValueChange}
-      trackColor={{ false: '#D1D5DB', true: '#818CF8' }}
-      thumbColor={value ? '#1e1b4b' : '#f4f3f4'}
-    />
-  </View>
-);
-
-export const PrivacySettingsScreen: React.FC = () => {
-  const navigation = useNavigation<PrivacySettingsNavigationProp>();
-  const [locationSharing, setLocationSharing] = useState(true);
-  const [profileVisibility, setProfileVisibility] = useState(true);
-  const [activitySharing, setActivitySharing] = useState(true);
-  const [onlineStatus, setOnlineStatus] = useState(true);
+  const updateSetting = <T extends keyof PrivacySettings>(
+    category: T,
+    setting: keyof PrivacySettings[T],
+    value: PrivacySettings[T][keyof PrivacySettings[T]]
+  ) => {
+    setSettings(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [setting]: value,
+      },
+    }));
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
           style={styles.backButton}
+          onPress={() => navigation.goBack()}
         >
-          <Icon icon={ArrowLeft} size={24} color="#1a1a1a" />
+          <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
-        <Text style={styles.title}>Privacy Settings</Text>
+        <Text style={styles.headerTitle}>Privacy Settings</Text>
       </View>
 
       <ScrollView style={styles.content}>
+        {/* Profile Privacy */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location Privacy</Text>
-          <PrivacyToggle
-            title="Location Sharing"
-            description="Allow others to see your location on the map"
-            value={locationSharing}
-            onValueChange={setLocationSharing}
-          />
+          <View style={styles.sectionHeader}>
+            <Shield color="#60a5fa" size={20} />
+            <Text style={styles.sectionTitle}>Profile Privacy</Text>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.pickerContainer}>
+              <Text style={styles.label}>Profile Visibility</Text>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={settings.profile.visibility}
+                  onValueChange={(value) => updateSetting('profile', 'visibility', value)}
+                  style={styles.pickerContent}
+                  dropdownIconColor="white"
+                >
+                  {visibilityOptions.map(option => (
+                    <Picker.Item
+                      key={option.value}
+                      label={option.label}
+                      value={option.value}
+                      color="white"
+                    />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
+            <View style={styles.settingItem}>
+              <View>
+                <Text style={styles.settingTitle}>Show Location</Text>
+                <Text style={styles.settingDescription}>Display your current location</Text>
+              </View>
+              <Switch
+                value={settings.profile.showLocation}
+                onValueChange={(value) => updateSetting('profile', 'showLocation', value)}
+                trackColor={{ false: '#312e81', true: '#4f46e5' }}
+                thumbColor="white"
+              />
+            </View>
+
+            <View style={styles.settingItem}>
+              <View>
+                <Text style={styles.settingTitle}>Activity Status</Text>
+                <Text style={styles.settingDescription}>Show your activity status</Text>
+              </View>
+              <Switch
+                value={settings.profile.showActivity}
+                onValueChange={(value) => updateSetting('profile', 'showActivity', value)}
+                trackColor={{ false: '#312e81', true: '#4f46e5' }}
+                thumbColor="white"
+              />
+            </View>
+          </View>
         </View>
 
+        {/* Location Services */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile Privacy</Text>
-          <PrivacyToggle
-            title="Public Profile"
-            description="Make your profile visible to everyone"
-            value={profileVisibility}
-            onValueChange={setProfileVisibility}
-          />
-          <PrivacyToggle
-            title="Activity Sharing"
-            description="Share your check-ins and reviews"
-            value={activitySharing}
-            onValueChange={setActivitySharing}
-          />
-          <PrivacyToggle
-            title="Online Status"
-            description="Show when you're active on the app"
-            value={onlineStatus}
-            onValueChange={setOnlineStatus}
-          />
+          <View style={styles.sectionHeader}>
+            <MapPin color="#60a5fa" size={20} />
+            <Text style={styles.sectionTitle}>Location Services</Text>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.settingItem}>
+              <View>
+                <Text style={styles.settingTitle}>Real-time Location</Text>
+                <Text style={styles.settingDescription}>Share location while using app</Text>
+              </View>
+              <Switch
+                value={settings.location.shareRealTime}
+                onValueChange={(value) => updateSetting('location', 'shareRealTime', value)}
+                trackColor={{ false: '#312e81', true: '#4f46e5' }}
+                thumbColor="white"
+              />
+            </View>
+
+            <View style={styles.settingItem}>
+              <View>
+                <Text style={styles.settingTitle}>Show Nearby Users</Text>
+                <Text style={styles.settingDescription}>Allow others to find you nearby</Text>
+              </View>
+              <Switch
+                value={settings.location.showNearby}
+                onValueChange={(value) => updateSetting('location', 'showNearby', value)}
+                trackColor={{ false: '#312e81', true: '#4f46e5' }}
+                thumbColor="white"
+              />
+            </View>
+          </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.blockedUsersButton}
-          onPress={() => navigation.navigate('BlockedUsers')}
-        >
-          <Text style={styles.blockedUsersText}>Manage Blocked Users</Text>
-        </TouchableOpacity>
+        {/* Messages & Interactions */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MessageSquare color="#60a5fa" size={20} />
+            <Text style={styles.sectionTitle}>Messages & Interactions</Text>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.pickerContainer}>
+              <Text style={styles.label}>Who can message you</Text>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={settings.messaging.allowDirect}
+                  onValueChange={(value) => updateSetting('messaging', 'allowDirect', value)}
+                  style={styles.pickerContent}
+                  dropdownIconColor="white"
+                >
+                  <Picker.Item label="Everyone" value="everyone" color="white" />
+                  <Picker.Item label="Contacts Only" value="contacts" color="white" />
+                  <Picker.Item label="No One" value="none" color="white" />
+                </Picker>
+              </View>
+            </View>
+
+            <View style={styles.settingItem}>
+              <View>
+                <Text style={styles.settingTitle}>Read Receipts</Text>
+                <Text style={styles.settingDescription}>Show when you've read messages</Text>
+              </View>
+              <Switch
+                value={settings.messaging.readReceipts}
+                onValueChange={(value) => updateSetting('messaging', 'readReceipts', value)}
+                trackColor={{ false: '#312e81', true: '#4f46e5' }}
+                thumbColor="white"
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Warning Section */}
+        <View style={styles.warningCard}>
+          <AlertCircle color="#fbbf24" size={20} style={styles.warningIcon} />
+          <Text style={styles.warningText}>
+            Some features may be limited when privacy settings are restricted. You can always adjust these settings later.
+          </Text>
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#1e1b4b',
   },
   header: {
+    backgroundColor: '#312e81',
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    gap: 12,
   },
   backButton: {
-    padding: 8,
-    marginRight: 8,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  title: {
+  headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: 'white',
   },
   content: {
     flex: 1,
+    padding: 16,
   },
   section: {
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginLeft: 16,
-    marginBottom: 8,
-    marginTop: 16,
-  },
-  toggleItem: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+  },
+  card: {
+    backgroundColor: '#312e81',
+    borderRadius: 12,
     padding: 16,
-    backgroundColor: '#fff',
+    gap: 16,
   },
-  toggleInfo: {
-    flex: 1,
-    marginRight: 16,
+  pickerContainer: {
+    gap: 8,
   },
-  toggleTitle: {
+  label: {
+    color: 'white',
     fontSize: 16,
-    fontWeight: '500',
-    color: '#1a1a1a',
-    marginBottom: 4,
   },
-  toggleDescription: {
-    fontSize: 14,
-    color: '#666',
-  },
-  blockedUsersButton: {
-    margin: 16,
-    padding: 16,
-    backgroundColor: '#f3f4f6',
+  picker: {
+    backgroundColor: '#1e1b4b',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4338ca',
+    overflow: 'hidden',
+  },
+  pickerContent: {
+    color: 'white',
+    backgroundColor: '#1e1b4b',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  blockedUsersText: {
+  settingTitle: {
+    color: 'white',
     fontSize: 16,
-    fontWeight: '500',
-    color: '#1e1b4b',
+    marginBottom: 4,
   },
-}); 
+  settingDescription: {
+    color: '#a5b4fc',
+    fontSize: 14,
+  },
+  warningCard: {
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 24,
+  },
+  warningIcon: {
+    marginTop: 2,
+  },
+  warningText: {
+    color: '#fbbf24',
+    fontSize: 14,
+    flex: 1,
+  },
+});
+
+export default PrivacySettingsScreen;

@@ -9,7 +9,7 @@ import authReducer from './slices/authSlice';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth'] // only auth will be persisted
+  whitelist: ['auth'], // only auth will be persisted
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
@@ -31,4 +31,4 @@ export const persistor = persistStore(store);
 setupListeners(store.dispatch);
 
 export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch; 
+export type AppDispatch = typeof store.dispatch;

@@ -16,4 +16,4 @@ export function calculateDistance(point1: Location, point2: Location): number {
 
 function toRad(degrees: number): number {
   return (degrees * Math.PI) / 180;
-} 
+}

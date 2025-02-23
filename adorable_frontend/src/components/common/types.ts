@@ -22,17 +22,17 @@ export type ButtonSize = 'small' | 'medium' | 'large';
 export type InputVariant = 'default' | 'filled' | 'outlined';
 
 // Typography variants
-export type TypographyVariant = 
-  | 'h1' 
-  | 'h2' 
-  | 'h3' 
-  | 'h4' 
-  | 'subtitle1' 
-  | 'subtitle2' 
-  | 'body1' 
-  | 'body2' 
-  | 'caption' 
-  | 'button' 
+export type TypographyVariant =
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'subtitle1'
+  | 'subtitle2'
+  | 'body1'
+  | 'body2'
+  | 'caption'
+  | 'button'
   | 'overline';
 
 // Status types for components
@@ -45,4 +45,4 @@ export type LoadingSize = 'small' | 'medium' | 'large';
 export type AnimationType = 'fade' | 'slide' | 'scale';
 
 // Icon sizes
-export type IconSize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge'; 
+export type IconSize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge';

@@ -130,4 +130,4 @@ export const {
   setError,
 } = chatSlice.actions;
 
-export const chatReducer = chatSlice.reducer; 
+export const chatReducer = chatSlice.reducer;

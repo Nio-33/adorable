@@ -1,224 +1,145 @@
 import React from 'react';
 import {
-  View,
-  StyleSheet,
-  ViewStyle,
-  StyleProp,
-  ScrollView,
+  FlatList,
   RefreshControl,
-  ListRenderItem,
-  ListRenderItemInfo,
   ActivityIndicator,
+  StyleSheet,
+  View,
+  ViewStyle,
+  ListRenderItem,
 } from 'react-native';
 import { COLORS, SPACING } from '../../../config/theme';
-import { BaseComponentProps } from '../../common/types';
-import { Typography } from '../../atoms/Typography';
-import { Loading } from '../../atoms/Loading';
+import { Typography } from '../../atoms/Typography/Typography';
 
-export interface ListProps<T> extends BaseComponentProps {
-  data?: T[];
-  title?: string;
-  subtitle?: string;
+interface ListProps<T> {
+  data: T[];
+  renderItem: ListRenderItem<T>;
   loading?: boolean;
   refreshing?: boolean;
-  error?: string | undefined;
   onRefresh?: () => void;
+  emptyText?: string;
+  ListEmptyComponent?: React.ReactElement;
+  style?: ViewStyle;
+  contentContainerStyle?: ViewStyle;
+  ItemSeparatorComponent?: React.ComponentType<any>;
+  keyExtractor?: (item: T, index: number) => string;
   onEndReached?: () => void;
   onEndReachedThreshold?: number;
-  emptyText?: string;
-  headerRight?: React.ReactNode;
-  ListHeaderComponent?: React.ReactNode;
-  ListFooterComponent?: React.ReactNode;
-  ListEmptyComponent?: React.ReactNode;
-  scrollEnabled?: boolean;
-  renderItem?: ListRenderItem<T>;
-  children?: React.ReactNode;
+  ListHeaderComponent?: React.ComponentType<any> | React.ReactElement;
+  ListFooterComponent?: React.ComponentType<any> | React.ReactElement;
 }
 
 export function List<T>({
   data,
-  title,
-  subtitle,
+  renderItem,
   loading = false,
   refreshing = false,
-  error,
   onRefresh,
+  emptyText = 'No items found',
+  ListEmptyComponent,
+  style,
+  contentContainerStyle,
+  ItemSeparatorComponent,
+  keyExtractor,
   onEndReached,
   onEndReachedThreshold = 0.5,
-  emptyText = 'No items to display',
-  headerRight,
   ListHeaderComponent,
   ListFooterComponent,
-  ListEmptyComponent,
-  scrollEnabled = true,
-  renderItem,
-  style,
-  children,
-  testID,
 }: ListProps<T>) {
-  const containerStyle: StyleProp<ViewStyle> = [
-    styles.container,
-    style,
-  ];
+  if (loading && !refreshing && data.length === 0) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator color={COLORS.primary.main} size="large" />
+      </View>
+    );
+  }
 
-  const hasHeader = title || subtitle || headerRight;
-  const isEmpty = !children && (!data || data.length === 0);
-
-  const handleScroll = (event: any) => {
-    if (!onEndReached) return;
-
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const paddingToBottom = contentSize.height * onEndReachedThreshold;
-    const isEndReached = layoutMeasurement.height + contentOffset.y >= 
-      contentSize.height - paddingToBottom;
-
-    if (isEndReached && !loading && !refreshing) {
-      onEndReached();
+  const renderEmpty = () => {
+    if (ListEmptyComponent) {
+      return ListEmptyComponent;
     }
-  };
-
-  const renderHeader = () => {
-    if (!hasHeader) return null;
 
     return (
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          {title && (
-            <Typography variant="h4" style={styles.title}>
-              {title}
-            </Typography>
-          )}
-          {subtitle && (
-            <Typography
-              variant="body2"
-              color={COLORS.text.secondary}
-              style={styles.subtitle}
-            >
-              {subtitle}
-            </Typography>
-          )}
-        </View>
-        {headerRight && (
-          <View style={styles.headerRight}>{headerRight}</View>
-        )}
+      <View style={styles.emptyContainer}>
+        <Typography
+          variant="body1"
+          color={COLORS.text.secondary}
+          style={styles.emptyText}
+        >
+          {emptyText}
+        </Typography>
       </View>
     );
   };
 
-  const renderContent = () => {
-    if (loading && !refreshing && !data?.length) {
-      return <Loading text="Loading..." />;
-    }
-
-    if (error) {
-      return (
-        <Typography
-          variant="body2"
-          color={COLORS.status.error}
-          style={styles.message}
-        >
-          {error}
-        </Typography>
-      );
-    }
-
-    if (isEmpty) {
-      return ListEmptyComponent || (
-        <Typography
-          variant="body2"
-          color={COLORS.text.secondary}
-          style={styles.message}
-        >
-          {emptyText}
-        </Typography>
-      );
-    }
-
-    if (renderItem && data) {
-      return data.map((item, index) => {
-        const info: ListRenderItemInfo<T> = {
-          item,
-          index,
-          separators: {
-            highlight: () => {},
-            unhighlight: () => {},
-            updateProps: () => {},
-          },
-        };
-        return renderItem(info);
-      });
-    }
-
-    return children;
-  };
-
-  const renderFooter = () => {
-    if (loading && !refreshing && data?.length) {
-      return (
-        <View style={styles.loadingFooter}>
-          <ActivityIndicator color={COLORS.primary} />
-        </View>
-      );
-    }
-    return ListFooterComponent;
-  };
-
-  const Container = scrollEnabled ? ScrollView : View;
-  const containerProps = scrollEnabled
-    ? {
-        showsVerticalScrollIndicator: false,
-        refreshControl: onRefresh ? (
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        ) : undefined,
-        onScroll: handleScroll,
-        scrollEventThrottle: 16,
-      }
-    : {};
-
   return (
-    <Container
-      style={containerStyle}
-      testID={testID}
-      {...containerProps}
-    >
-      {renderHeader()}
-      {ListHeaderComponent}
-      {renderContent()}
-      {renderFooter()}
-    </Container>
+    <FlatList
+      data={data}
+      renderItem={renderItem}
+      style={[styles.container, style]}
+      contentContainerStyle={[
+        styles.contentContainer,
+        data.length === 0 && styles.emptyContentContainer,
+        contentContainerStyle,
+      ]}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary.main]}
+            tintColor={COLORS.primary.main}
+          />
+        ) : undefined
+      }
+      ListEmptyComponent={renderEmpty}
+      ItemSeparatorComponent={ItemSeparatorComponent}
+      keyExtractor={keyExtractor}
+      onEndReached={onEndReached}
+      onEndReachedThreshold={onEndReachedThreshold}
+      ListHeaderComponent={ListHeaderComponent}
+      ListFooterComponent={
+        <View>
+          {typeof ListFooterComponent === 'function'
+            ? <ListFooterComponent />
+            : ListFooterComponent}
+          {loading && data.length > 0 && (
+            <ActivityIndicator
+              color={COLORS.primary.main}
+              style={styles.footerLoader}
+            />
+          )}
+        </View>
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background.primary,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  contentContainer: {
+    flexGrow: 1,
+  },
+  emptyContentContainer: {
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
   },
-  headerLeft: {
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
   },
-  headerRight: {
-    marginLeft: SPACING.md,
-  },
-  title: {
-    marginBottom: SPACING.xs,
-  },
-  subtitle: {
-    marginBottom: SPACING.xs,
-  },
-  message: {
-    padding: SPACING.lg,
+  emptyText: {
     textAlign: 'center',
   },
-  loadingFooter: {
-    padding: SPACING.md,
-    alignItems: 'center',
+  footerLoader: {
+    padding: SPACING.lg,
   },
-}); 
+});

@@ -24,4 +24,4 @@ export const AuthNavigator: React.FC = () => {
       <Stack.Screen name="SignUp" component={SignUpScreen} />
     </Stack.Navigator>
   );
-}; 
+};

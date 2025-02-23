@@ -30,15 +30,15 @@ export const LoginScreen: React.FC = () => {
   };
 
   const validateEmail = (value: string): string | undefined => {
-    if (!value) return 'Email is required';
+    if (!value) {return 'Email is required';}
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return 'Invalid email address';
+    if (!emailRegex.test(value)) {return 'Invalid email address';}
     return undefined;
   };
 
   const validatePassword = (value: string): string | undefined => {
-    if (!value) return 'Password is required';
-    if (value.length < 8) return 'Password must be at least 8 characters';
+    if (!value) {return 'Password is required';}
+    if (value.length < 8) {return 'Password must be at least 8 characters';}
     return undefined;
   };
 
@@ -51,7 +51,7 @@ export const LoginScreen: React.FC = () => {
         <Typography variant="h2" style={styles.title}>
           Welcome Back
         </Typography>
-        
+
         <Typography
           variant="body1"
           color={COLORS.text.secondary}
@@ -169,4 +169,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: SPACING.xl,
   },
-}); 
+});

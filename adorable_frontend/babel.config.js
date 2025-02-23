@@ -18,10 +18,21 @@ module.exports = function(api) {
             '@config': './src/config',
             '@types': './src/types',
             '@hooks': './src/hooks',
-            '@contexts': './src/contexts'
-          }
-        }
-      ]
-    ]
+            '@contexts': './src/contexts',
+          },
+        },
+      ],
+      [
+        'module:react-native-dotenv',
+        {
+          moduleName: '@env',
+          path: '.env',
+          blacklist: null,
+          whitelist: null,
+          safe: true,
+          allowUndefined: true,
+        },
+      ],
+    ],
   };
 };

@@ -59,4 +59,4 @@ export const ERROR_MESSAGES = {
   PERMISSION_DENIED: 'Permission denied. Please check your settings.',
   LOCATION_ERROR: 'Unable to get location. Please enable location services.',
   GENERAL_ERROR: 'Something went wrong. Please try again later.',
-}; 
+};
